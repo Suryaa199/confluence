@@ -7,13 +7,13 @@ namespace InterviewCopilot.Services.OpenAI;
 
 public sealed class OpenAiLlmService : ILlmService
 {
-    private readonly HttpClient _http;
+    private readonly System.Net.Http.HttpClient _http;
     private readonly string _model;
 
     public OpenAiLlmService(string apiKey, string model = "gpt-4o-mini")
     {
         _model = model;
-        _http = new HttpClient
+        _http = new System.Net.Http.HttpClient
         {
             BaseAddress = new Uri("https://api.openai.com/")
         };
@@ -22,7 +22,7 @@ public sealed class OpenAiLlmService : ILlmService
 
     public async IAsyncEnumerable<string> StreamAnswerAsync(string question, string context, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
-        var req = new HttpRequestMessage(HttpMethod.Post, "v1/chat/completions");
+        var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "v1/chat/completions");
         req.Headers.Accept.Clear();
         req.Headers.Accept.ParseAdd("text/event-stream");
 
@@ -36,7 +36,7 @@ public sealed class OpenAiLlmService : ILlmService
                 new { role = "user", content = $"Context:\n{context}\n\nQuestion:\n{question}" }
             }
         };
-        req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 
         using var res = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
         res.EnsureSuccessStatusCode();
