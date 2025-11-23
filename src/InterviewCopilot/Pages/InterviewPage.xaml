@@ -1,0 +1,9 @@
+<Page x:Class="InterviewCopilot.Pages.InterviewPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Interview">
+    <Grid>
+        <TextBlock Text="Interview Page (placeholder)"/>
+    </Grid>
+  </Page>
+

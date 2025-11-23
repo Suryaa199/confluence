@@ -1,0 +1,43 @@
+name: CI (Windows build)
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+
+      - name: Restore
+        run: dotnet restore InterviewCopilot.sln
+
+      - name: Build
+        run: dotnet build InterviewCopilot.sln -c Release --no-restore
+
+      - name: Publish (win-x64 self-contained)
+        run: |
+          $out = "dist/win-x64"
+          dotnet publish src/InterviewCopilot/InterviewCopilot.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o $out
+          Get-ChildItem $out -Recurse | Write-Host
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: InterviewCopilot-win-x64
+          path: dist/win-x64/**
+          if-no-files-found: error
+
