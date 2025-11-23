@@ -7,9 +7,7 @@
         mc:Ignorable="d"
         Title="Interview Copilot" Height="720" Width="1100"
         Topmost="True" WindowStartupLocation="CenterScreen">
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
+    <!-- DataContext is assigned in code-behind to avoid XAML compile-time instantiation. -->
     <Grid Background="{DynamicResource Surface}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
