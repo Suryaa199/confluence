@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Net.Http.Headers;
 
 namespace InterviewCopilot.Services.OpenAI;
@@ -35,4 +36,3 @@ public sealed class OpenAiWhisperAsrService : IAsrService
         return string.Empty;
     }
 }
-
