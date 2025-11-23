@@ -53,6 +53,10 @@ jobs:
           dotnet publish src/InterviewCopilot/InterviewCopilot.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -v minimal --nologo -o $out
           Get-ChildItem $out -Recurse | Write-Host
 
+      - name: Smoke test
+        run: |
+          pwsh -File scripts/smoke.ps1 -Configuration Release -Runtime win-x64 -Project src/InterviewCopilot/InterviewCopilot.csproj -Solution InterviewCopilot.sln -Output dist/win-x64 -MinSizeMB 20
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
