@@ -2,9 +2,8 @@ name: CI (Windows build)
 
 on:
   push:
-    branches: [ "**" ]
   pull_request:
-    branches: [ "**" ]
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -40,4 +39,3 @@ jobs:
           name: InterviewCopilot-win-x64
           path: dist/win-x64/**
           if-no-files-found: error
-
