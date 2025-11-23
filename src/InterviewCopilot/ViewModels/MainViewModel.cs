@@ -5,8 +5,6 @@ using System.Windows.Input;
 using System.Linq;
 using System.Threading.Tasks;
 using InterviewCopilot.Services;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace InterviewCopilot.ViewModels;
 
@@ -18,7 +16,7 @@ public class MainViewModel : INotifyPropertyChanged
     private string _asrStatus = "Idle";
     private string _llmStatus = "Idle";
     private Services.Orchestrator? _orchestrator;
-    private Windows.OverlayWindow? _overlay;
+    private InterviewCopilot.Windows.OverlayWindow? _overlay;
     private bool _paused;
     private Services.AudioOptions? _lastOptions;
 
@@ -240,7 +238,7 @@ public class MainViewModel : INotifyPropertyChanged
     {
         if (_overlay is null)
         {
-            _overlay = new Windows.OverlayWindow();
+            _overlay = new InterviewCopilot.Windows.OverlayWindow();
             _overlay.Owner = System.Windows.Application.Current.MainWindow;
             _overlay.Show();
         }
@@ -254,7 +252,7 @@ public class MainViewModel : INotifyPropertyChanged
     {
         if (_overlay is null)
         {
-            _overlay = new Windows.OverlayWindow();
+            _overlay = new InterviewCopilot.Windows.OverlayWindow();
             _overlay.Owner = System.Windows.Application.Current.MainWindow;
             _overlay.Show();
         }
@@ -263,7 +261,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     private void OpenSettings()
     {
-        var w = new Windows.SettingsWindow();
+        var w = new InterviewCopilot.Windows.SettingsWindow();
         w.Owner = System.Windows.Application.Current.MainWindow;
         w.ShowDialog();
     }
