@@ -8,6 +8,10 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      NUGET_XMLDOC_MODE: skip
     defaults:
       run:
         shell: pwsh
@@ -18,19 +22,31 @@ jobs:
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          global-json-file: global.json
           cache: true
 
+      - name: Dotnet info
+        run: |
+          dotnet --info
+          dotnet --list-sdks
+          dotnet --list-runtimes
+
       - name: Restore
-        run: dotnet restore InterviewCopilot.sln
+        run: dotnet restore InterviewCopilot.sln --nologo -v minimal
 
       - name: Build
-        run: dotnet build InterviewCopilot.sln -c Release --no-restore
+        run: |
+          New-Item -ItemType Directory -Force -Path binlog | Out-Null
+          dotnet build InterviewCopilot.sln -c Release --no-restore /m /p:ContinuousIntegrationBuild=true \
+            -v minimal \
+            /bl:binlog/build.binlog
 
       - name: Publish (win-x64 self-contained)
         run: |
           $out = "dist/win-x64"
-          dotnet publish src/InterviewCopilot/InterviewCopilot.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o $out
+          dotnet publish src/InterviewCopilot/InterviewCopilot.csproj -c Release -r win-x64 --self-contained true \
+            -p:PublishSingleFile=true -p:PublishTrimmed=true \
+            -v minimal --nologo -o $out
           Get-ChildItem $out -Recurse | Write-Host
 
       - name: Upload artifact
@@ -39,3 +55,12 @@ jobs:
           name: InterviewCopilot-win-x64
           path: dist/win-x64/**
           if-no-files-found: error
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            binlog/**
+          if-no-files-found: warn
