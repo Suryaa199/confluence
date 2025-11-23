@@ -16,7 +16,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <DockPanel Grid.Row="0" Background="{DynamicResource SurfaceLow}" LastChildFill="False" Padding="8">
+        <DockPanel Grid.Row="0" Background="{DynamicResource SurfaceLow}" LastChildFill="False" Margin="0,0,0,0">
             <TextBlock Text="Interview Copilot" Style="{StaticResource Title}" Margin="0,0,12,0"/>
             <ComboBox Width="140" ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}"/>
             <ComboBox Width="180" ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name"/>
