@@ -41,6 +41,17 @@ public sealed class NoopLlmService : ILlmService
             yield return p;
         }
     }
+
+    public Task<IReadOnlyList<string>> GenerateFollowUpsAsync(string question, string context, CancellationToken ct)
+    {
+        IReadOnlyList<string> list = new[]
+        {
+            "Could you share a concrete example?",
+            "What metrics improved?",
+            "What trade-offs did you consider?"
+        };
+        return Task.FromResult(list);
+    }
 }
 
 public sealed class DefaultCoachingService : ICoachingService

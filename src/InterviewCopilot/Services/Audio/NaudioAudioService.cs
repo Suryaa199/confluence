@@ -211,11 +211,12 @@ public sealed class NaudioAudioService : IAudioService
 
     private void UpdateSessionActivity(SessionHint hint)
     {
-        if (_renderDevice is null || hint == SessionHint.None) { _hasMatchingSessions = false; _sessionActive = false; return; }
+        if (_renderDevice is null) { _hasMatchingSessions = false; _sessionActive = false; return; }
         var sessions = _renderDevice.AudioSessionManager?.Sessions;
         if (sessions is null) { _hasMatchingSessions = false; _sessionActive = false; return; }
         bool hasMatch = false;
         bool active = false;
+        var prefer = _options?.PreferredProcessName?.ToLowerInvariant();
         for (int i = 0; i < sessions.Count; i++)
         {
             var s = sessions[i];
@@ -230,7 +231,16 @@ public sealed class NaudioAudioService : IAudioService
                 }
             }
             catch { }
-            if (IsHintMatch(proc, hint))
+            bool match = false;
+            if (!string.IsNullOrEmpty(prefer))
+            {
+                match = proc.Contains(prefer);
+            }
+            else if (hint != SessionHint.None)
+            {
+                match = IsHintMatch(proc, hint);
+            }
+            if (match)
             {
                 hasMatch = true;
                 try

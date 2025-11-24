@@ -11,6 +11,7 @@ public sealed class AudioOptions
     public DevicePreference Device { get; init; } = DevicePreference.Default;
     public SessionHint Session { get; init; } = SessionHint.None;
     public string? EndpointId { get; init; }
+    public string? PreferredProcessName { get; init; }
 }
 
 public sealed class AudioFrame
@@ -50,6 +51,7 @@ public interface IAsrService
 public interface ILlmService
 {
     IAsyncEnumerable<string> StreamAnswerAsync(string question, string context, CancellationToken ct);
+    Task<IReadOnlyList<string>> GenerateFollowUpsAsync(string question, string context, CancellationToken ct);
 }
 
 public interface ICoachingService

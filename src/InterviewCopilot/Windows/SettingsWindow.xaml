@@ -17,11 +17,56 @@
 
                 <CheckBox x:Name="UseSilero" Content="Enable Silero VAD if model exists" Margin="0,16,0,0"/>
 
+                <TextBlock Text="VAD Min Voice (ms)" Margin="0,16,0,0" FontWeight="Bold"/>
+                <TextBox x:Name="VadMinBox" Text="200"/>
+
+                <TextBlock Text="VAD Max Silence (ms)" Margin="0,16,0,0" FontWeight="Bold"/>
+                <TextBox x:Name="VadMaxBox" Text="600"/>
+
+                <TextBlock Text="Chat Model" Margin="0,16,0,0" FontWeight="Bold"/>
+                <ComboBox x:Name="ChatModelBox" SelectedIndex="0">
+                    <ComboBoxItem Content="gpt-4o-mini"/>
+                    <ComboBoxItem Content="gpt-4o"/>
+                </ComboBox>
+
+                <TextBlock Text="ASR Model" Margin="0,16,0,0" FontWeight="Bold"/>
+                <TextBox x:Name="AsrModelBox" Text="whisper-1"/>
+
+                <TextBlock Text="Resume (txt)" Margin="0,16,0,0" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Load .txt" Click="OnLoadResume" Margin="0,0,8,0"/>
+                    <TextBox x:Name="ResumeBox" AcceptsReturn="True" Height="100" Width="Auto"/>
+                </StackPanel>
+
+                <TextBlock Text="Job Description (txt)" Margin="0,16,0,0" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Load .txt" Click="OnLoadJd" Margin="0,0,8,0"/>
+                    <TextBox x:Name="JdBox" AcceptsReturn="True" Height="100" Width="Auto"/>
+                </StackPanel>
+
                 <TextBlock Text="Keywords" Margin="0,16,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="KeywordsBox" AcceptsReturn="True" Height="80"/>
 
                 <TextBlock Text="Company Blurb" Margin="0,16,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="CompanyBox" AcceptsReturn="True" Height="100"/>
+
+                <Button Content="Generate Cheat Sheet" Margin="0,16,0,0" Click="OnGenerateCheatSheet"/>
+                <TextBlock Text="Cheat Sheet" Margin="0,8,0,0" FontWeight="Bold"/>
+                <TextBox x:Name="CheatBox" AcceptsReturn="True" Height="150"/>
+
+                <TextBlock Text="Story Bank (search)" Margin="0,16,0,0" FontWeight="Bold"/>
+                <TextBox x:Name="StorySearchBox"/>
+                <Button Content="Search Stories" Click="OnSearchStories"/>
+                <ListBox x:Name="StoryList" Height="150"/>
+
+                <TextBlock Text="Per-App Preference" Margin="0,16,0,0" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBox x:Name="PreferredProcBox" Width="200"/>
+                    <Button Content="Pick..." Margin="8,0,0,0" Click="OnPickApp"/>
+                </StackPanel>
+
+                <CheckBox x:Name="SpeakAnswersBox" Content="Speak answers via TTS" Margin="0,16,0,0"/>
+                <CheckBox x:Name="TtsCommBox" Content="Use Communications device for TTS"/>
             </StackPanel>
         </ScrollViewer>
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
@@ -30,4 +75,3 @@
         </StackPanel>
     </Grid>
 </Window>
-

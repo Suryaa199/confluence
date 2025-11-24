@@ -21,9 +21,6 @@
     <PackageReference Include="NAudio" Version="2.2.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
 
   <PropertyGroup>
     <PublishTrimmed>false</PublishTrimmed>

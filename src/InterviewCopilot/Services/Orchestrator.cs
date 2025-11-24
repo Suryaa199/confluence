@@ -33,7 +33,7 @@ public sealed class Orchestrator : IDisposable
         _coach = coach;
         _spooler = spooler;
         _settings = settings;
-        _vad.Configure(enabled: true, minVoiceMs: 200, maxSilenceMs: 600);
+        _vad.Configure(enabled: true, minVoiceMs: settings.VadMinVoiceMs, maxSilenceMs: settings.VadMaxSilenceMs);
         _audio.OnFrame += HandleFrame;
     }
 
@@ -41,6 +41,7 @@ public sealed class Orchestrator : IDisposable
     {
         _cts = new CancellationTokenSource();
         await _audio.StartAsync(options);
+        _ = _spooler.FlushAsync(_cts.Token);
     }
 
     public async Task StopAsync()
@@ -120,7 +121,7 @@ public sealed class Orchestrator : IDisposable
             {
                 OnAnswerToken?.Invoke(token);
             }
-            var (answer, follow) = await _coach.GenerateAsync(question, context, ct);
+            var follow = await AppServices.Llm.GenerateFollowUpsAsync(question, context, ct);
             OnFollowUps?.Invoke(follow);
         }
         catch { }

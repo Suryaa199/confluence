@@ -6,6 +6,7 @@ namespace InterviewCopilot.Services.OpenAI;
 public sealed class OpenAiWhisperAsrService : IAsrService
 {
     private readonly System.Net.Http.HttpClient _http;
+    public string Model { get; set; } = "whisper-1";
 
     public OpenAiWhisperAsrService(string apiKey)
     {
@@ -19,7 +20,7 @@ public sealed class OpenAiWhisperAsrService : IAsrService
         var file = new System.Net.Http.ByteArrayContent(wavBytes);
         file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/wav");
         content.Add(file, "file", "chunk.wav");
-        content.Add(new System.Net.Http.StringContent("whisper-1"), "model");
+        content.Add(new System.Net.Http.StringContent(Model), "model");
         using var res = await _http.PostAsync("v1/audio/transcriptions", content, ct);
         res.EnsureSuccessStatusCode();
         var json = await res.Content.ReadAsStringAsync(ct);

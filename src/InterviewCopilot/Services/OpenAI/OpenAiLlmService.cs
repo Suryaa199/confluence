@@ -67,4 +67,48 @@ public sealed class OpenAiLlmService : ILlmService
             if (!string.IsNullOrEmpty(tokenToYield)) yield return tokenToYield;
         }
     }
+
+    public async Task<IReadOnlyList<string>> GenerateFollowUpsAsync(string question, string context, CancellationToken ct)
+    {
+        var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "v1/chat/completions");
+        var prompt = "Return 3-5 concise interview follow-up questions as a JSON array of strings. No commentary.";
+        var body = new
+        {
+            model = _model,
+            stream = false,
+            response_format = new { type = "json_object" },
+            messages = new object[]
+            {
+                new { role = "system", content = prompt },
+                new { role = "user", content = $"Context:\n{context}\n\nQuestion:\n{question}" }
+            }
+        };
+        req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        using var res = await _http.SendAsync(req, ct);
+        res.EnsureSuccessStatusCode();
+        var json = await res.Content.ReadAsStringAsync(ct);
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            if (string.IsNullOrEmpty(content)) return Array.Empty<string>();
+            using var inner = JsonDocument.Parse(content);
+            if (inner.RootElement.TryGetProperty("items", out var arr) && arr.ValueKind == JsonValueKind.Array)
+            {
+                var list = new List<string>();
+                foreach (var el in arr.EnumerateArray())
+                {
+                    if (el.ValueKind == JsonValueKind.String) list.Add(el.GetString()!);
+                }
+                if (list.Count > 0) return list;
+            }
+            // fallback: try parsing as array directly
+            if (inner.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                return inner.RootElement.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.String).Select(e => e.GetString()!).ToList();
+            }
+        }
+        catch { }
+        return Array.Empty<string>();
+    }
 }

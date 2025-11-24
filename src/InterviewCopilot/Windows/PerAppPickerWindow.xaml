@@ -1,0 +1,37 @@
+<Window x:Class="InterviewCopilot.Windows.PerAppPickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Per-App Picker" Height="400" Width="500" WindowStartupLocation="CenterOwner">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Row="0">
+            <Button Content="Refresh" Click="OnRefresh"/>
+            <TextBlock Text="Selected:" Margin="8,0,0,0"/>
+            <TextBlock x:Name="SelectedText"/>
+        </StackPanel>
+        <ListView x:Name="List" Grid.Row="1" SelectionMode="Single">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Process" DisplayMemberBinding="{Binding ProcessName}" Width="180"/>
+                    <GridViewColumn Header="Title" DisplayMemberBinding="{Binding WindowTitle}" Width="220"/>
+                    <GridViewColumn Header="Level" Width="60">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <ProgressBar Minimum="0" Maximum="1" Value="{Binding Level}" Height="12"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Use" Click="OnUse"/>
+            <Button Content="Close" Margin="8,0,0,0" Click="OnClose"/>
+        </StackPanel>
+    </Grid>
+</Window>
+

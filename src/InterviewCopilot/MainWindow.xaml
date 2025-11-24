@@ -20,6 +20,7 @@
             <ComboBox Width="180" ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name"/>
             <ComboBox Width="150" ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}"/>
             <ComboBox Width="140" ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}"/>
+            <Button Content="Per-App Picker" Command="{Binding OpenPerAppPickerCommand}"/>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                 <TextBlock Text="Level" VerticalAlignment="Center" Margin="0,0,6,0"/>
                 <ProgressBar Width="120" Height="12" Minimum="0" Maximum="1" Value="{Binding Level}"/>

@@ -2,8 +2,14 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       Title="Interview">
-    <Grid>
-        <TextBlock Text="Interview Page (placeholder)"/>
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Cheat Sheet" FontWeight="Bold"/>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <TextBlock x:Name="CheatText" TextWrapping="Wrap"/>
+        </ScrollViewer>
     </Grid>
   </Page>
-

@@ -56,6 +56,7 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand RegenerateCommand { get; }
     public ICommand ToggleClickThroughCommand { get; }
     public ICommand PauseCommand { get; }
+    public ICommand OpenPerAppPickerCommand { get; }
 
     public MainViewModel()
     {
@@ -69,6 +70,7 @@ public class MainViewModel : INotifyPropertyChanged
         Services.AppServices.Audio.OnLevel += v => Level = v;
         ToggleClickThroughCommand = new RelayCommand(_ => ToggleClickThrough());
         PauseCommand = new RelayCommand(async _ => await TogglePauseAsync());
+        OpenPerAppPickerCommand = new RelayCommand(_ => OpenPerAppPicker());
         RefreshEndpoints();
     }
 
@@ -89,6 +91,7 @@ public class MainViewModel : INotifyPropertyChanged
         _orchestrator.OnAnswerToken += tok =>
         {
             LiveAnswer += tok;
+            _overlay?.SetAnswer(LiveAnswer);
         };
         _orchestrator.OnFollowUps += list =>
         {
@@ -96,6 +99,13 @@ public class MainViewModel : INotifyPropertyChanged
             {
                 FollowUps.Clear();
                 foreach (var f in list) FollowUps.Add(f);
+                // Save story when follow-ups arrive (answer considered complete)
+                _ = Services.AppServices.Stories.SaveAsync(LiveQuestion, LiveAnswer, DateTimeOffset.Now);
+                var s = Services.AppServices.LoadSettings();
+                if (s.SpeakAnswers)
+                {
+                    _ = Services.AppServices.Tts.SpeakAsync(LiveAnswer, CancellationToken.None);
+                }
             });
         };
 
@@ -116,7 +126,8 @@ public class MainViewModel : INotifyPropertyChanged
                 "Browser" => Services.SessionHint.Browser,
                 _ => Services.SessionHint.None
             },
-            EndpointId = SelectedAudioEndpoint?.Id
+            EndpointId = SelectedAudioEndpoint?.Id,
+            PreferredProcessName = Services.AppServices.LoadSettings().PreferredProcessName
         };
         _lastOptions = options;
         await _orchestrator.StartAsync(options);
@@ -262,6 +273,13 @@ public class MainViewModel : INotifyPropertyChanged
     private void OpenSettings()
     {
         var w = new InterviewCopilot.Windows.SettingsWindow();
+        w.Owner = System.Windows.Application.Current.MainWindow;
+        w.ShowDialog();
+    }
+
+    private void OpenPerAppPicker()
+    {
+        var w = new InterviewCopilot.Windows.PerAppPickerWindow();
         w.Owner = System.Windows.Application.Current.MainWindow;
         w.ShowDialog();
     }
