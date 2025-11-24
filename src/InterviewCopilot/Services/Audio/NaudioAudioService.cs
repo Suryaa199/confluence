@@ -1,6 +1,7 @@
 // NOTE: Requires NAudio package. This is a best-effort skeleton to wire capture.
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
+using System.Diagnostics;
 
 namespace InterviewCopilot.Services.Audio;
 
@@ -221,9 +222,11 @@ public sealed class NaudioAudioService : IAudioService
             string proc = string.Empty;
             try
             {
-                if (s is NAudio.CoreAudioApi.AudioSessionControl2 s2)
+                var pi = s.GetType().GetProperty("Process");
+                if (pi != null)
                 {
-                    proc = (s2.Process?.ProcessName ?? string.Empty).ToLowerInvariant();
+                    var p = pi.GetValue(s) as System.Diagnostics.Process;
+                    if (p != null) proc = (p.ProcessName ?? string.Empty).ToLowerInvariant();
                 }
             }
             catch { }
