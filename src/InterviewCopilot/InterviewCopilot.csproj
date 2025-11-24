@@ -24,4 +24,9 @@
   <ItemGroup>
     <Reference Include="System.Net.Http" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <PublishTrimmed>false</PublishTrimmed>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+  </PropertyGroup>
 </Project>

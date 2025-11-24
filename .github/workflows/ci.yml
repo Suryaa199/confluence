@@ -50,7 +50,7 @@ jobs:
       - name: Publish (win-x64 self-contained)
         run: |
           $out = "dist/win-x64"
-          dotnet publish src/InterviewCopilot/InterviewCopilot.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -v minimal --nologo -o $out
+          dotnet publish src/InterviewCopilot/InterviewCopilot.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -v minimal --nologo -o $out
           Get-ChildItem $out -Recurse | Write-Host
 
       - name: Smoke test

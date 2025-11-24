@@ -21,7 +21,7 @@ dotnet build $Solution -c $Configuration --no-restore -v minimal
 
 Write-Host "== Publish ($Runtime) =="
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
-dotnet publish $Project -c $Configuration -r $Runtime --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -v minimal -o $Output
+dotnet publish $Project -c $Configuration -r $Runtime --self-contained true -p:PublishSingleFile=true -v minimal -o $Output
 
 Write-Host "== Verify artifact =="
 $exe = Join-Path $Output "InterviewCopilot.exe"
@@ -34,4 +34,3 @@ if ($size -lt $min) { throw "Smoke: EXE too small: $size < $min" }
 Write-Host "== List output =="
 Get-ChildItem $Output -Recurse | ForEach-Object { Write-Host $_.FullName }
 Write-Host "Smoke OK"
-
