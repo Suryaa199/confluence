@@ -2,6 +2,7 @@ using System.Windows;
 using Microsoft.Win32;
 using System.Net.Http;
 using System.Linq;
+using System.IO.Compression;
 using InterviewCopilot.Services;
 
 namespace InterviewCopilot.Windows;
@@ -113,20 +114,20 @@ public partial class SettingsWindow : Window
 
     private void OnLoadResume(object sender, RoutedEventArgs e)
     {
-        var dlg = new OpenFileDialog { Filter = "Text Files|*.txt|All Files|*.*" };
+        var dlg = new OpenFileDialog { Filter = "Text/Docx Files|*.txt;*.docx|All Files|*.*" };
         if (dlg.ShowDialog(this) == true)
         {
-            try { ResumeBox.Text = System.IO.File.ReadAllText(dlg.FileName); }
+            try { ResumeBox.Text = ReadTextOrDocx(dlg.FileName); }
             catch (Exception ex) { MessageBox.Show(this, ex.Message); }
         }
     }
 
     private void OnLoadJd(object sender, RoutedEventArgs e)
     {
-        var dlg = new OpenFileDialog { Filter = "Text Files|*.txt|All Files|*.*" };
+        var dlg = new OpenFileDialog { Filter = "Text/Docx Files|*.txt;*.docx|All Files|*.*" };
         if (dlg.ShowDialog(this) == true)
         {
-            try { JdBox.Text = System.IO.File.ReadAllText(dlg.FileName); }
+            try { JdBox.Text = ReadTextOrDocx(dlg.FileName); }
             catch (Exception ex) { MessageBox.Show(this, ex.Message); }
         }
     }
@@ -156,5 +157,21 @@ public partial class SettingsWindow : Window
         {
             CheatBox.Text = "Error: " + ex.Message;
         }
+    }
+
+    private static string ReadTextOrDocx(string path)
+    {
+        var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+        if (ext == ".docx")
+        {
+            using var zip = ZipFile.OpenRead(path);
+            var entry = zip.GetEntry("word/document.xml");
+            if (entry == null) return string.Empty;
+            using var sr = new System.IO.StreamReader(entry.Open());
+            var xml = sr.ReadToEnd();
+            // naive strip of XML tags
+            return System.Text.RegularExpressions.Regex.Replace(xml, "<[^>]+>", " ").Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">");
+        }
+        return System.IO.File.ReadAllText(path);
     }
 }

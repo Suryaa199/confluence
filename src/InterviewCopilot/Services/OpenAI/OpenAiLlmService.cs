@@ -71,12 +71,26 @@ public sealed class OpenAiLlmService : ILlmService
     public async Task<IReadOnlyList<string>> GenerateFollowUpsAsync(string question, string context, CancellationToken ct)
     {
         var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "v1/chat/completions");
-        var prompt = "Return 3-5 concise interview follow-up questions as a JSON array of strings. No commentary.";
+        var prompt = "You are generating interview follow-up questions. Output strictly as JSON: {\"followups\":[\"...\"]}. 3-5 items, concise, no numbering, no commentary.";
+        var jsonSchema = new
+        {
+            name = "followup_schema",
+            schema = new
+            {
+                type = "object",
+                properties = new
+                {
+                    followups = new { type = "array", items = new { type = "string" }, minItems = 3, maxItems = 5 }
+                },
+                required = new[] { "followups" },
+                additionalProperties = false
+            }
+        };
         var body = new
         {
             model = _model,
             stream = false,
-            response_format = new { type = "json_object" },
+            response_format = new { type = "json_schema", json_schema = jsonSchema },
             messages = new object[]
             {
                 new { role = "system", content = prompt },
@@ -93,7 +107,7 @@ public sealed class OpenAiLlmService : ILlmService
             var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             if (string.IsNullOrEmpty(content)) return Array.Empty<string>();
             using var inner = JsonDocument.Parse(content);
-            if (inner.RootElement.TryGetProperty("items", out var arr) && arr.ValueKind == JsonValueKind.Array)
+            if (inner.RootElement.TryGetProperty("followups", out var arr) && arr.ValueKind == JsonValueKind.Array)
             {
                 var list = new List<string>();
                 foreach (var el in arr.EnumerateArray())

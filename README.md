@@ -1,4 +1,4 @@
-Interview Copilot (Windows/desktop)
+Interview Copilot (Windows/desktop) [![CI (Windows build)](https://github.com/Suryaa199/AI_AGENT/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Suryaa199/AI_AGENT/actions/workflows/ci.yml)
 
 UI (Parakeet AI style and add scroll when ever it requireds  ) always-on-top Windows assistant for live interviews. Captures meeting audio (per-app/System/Mic), transcribes with OpenAI Whisper, and streams answers token-by-token using GPT-4o/4o-mini. Answers include key points, concrete examples, and CLI commands. Includes follow-up predictor, company cheat sheet, keywords, and offline ASR buffer.
 
