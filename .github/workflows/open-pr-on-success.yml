@@ -1,0 +1,34 @@
+name: Open PR on green CI
+
+on:
+  workflow_run:
+    workflows: ["CI (Windows build)"]
+    types: [completed]
+
+jobs:
+  open-pr:
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'feature/') }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Open PR to main if none exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const branch = context.payload.workflow_run.head_branch;
+            // Check if an open PR already exists from branch to main
+            const prs = await github.rest.pulls.list({ owner, repo, state: 'open', base: 'main', head: `${owner}:${branch}` });
+            if (prs.data.length > 0) {
+              core.info(`PR already exists: #${prs.data[0].number}`);
+              return;
+            }
+            const title = `Auto PR: ${branch} → main`;
+            const body = 'This PR was opened automatically after a successful CI run.';
+            const pr = await github.rest.pulls.create({ owner, repo, title, head: branch, base: 'main', body });
+            core.info(`Opened PR #${pr.data.number}`);
+

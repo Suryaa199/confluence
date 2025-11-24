@@ -1,7 +1,5 @@
-using System.Speech.Synthesis;
-using System.IO;
-using NAudio.CoreAudioApi;
-using NAudio.Wave;
+using System;
+using System.Threading;
 
 namespace InterviewCopilot.Services.Tts;
 
@@ -15,27 +13,14 @@ public sealed class SapiTtsService : ITtsService
         if (string.IsNullOrWhiteSpace(text)) return;
         await Task.Run(() =>
         {
-            using var synth = new SpeechSynthesizer();
-            if (!_useCommunications)
+            try
             {
-                synth.Speak(text);
-                return;
+                var type = Type.GetTypeFromProgID("SAPI.SpVoice");
+                if (type == null) return;
+                dynamic sp = Activator.CreateInstance(type)!;
+                sp.Speak(text, 0);
             }
-            using var ms = new MemoryStream();
-            synth.SetOutputToWaveStream(ms);
-            synth.Speak(text);
-            ms.Position = 0;
-            using var reader = new WaveFileReader(ms);
-            var enumerator = new MMDeviceEnumerator();
-            var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
-            using var wasapi = new WasapiOut(device, AudioClientShareMode.Shared, false, 100);
-            using var source = new WaveChannel32(reader);
-            wasapi.Init(source);
-            wasapi.Play();
-            while (wasapi.PlaybackState == PlaybackState.Playing)
-            {
-                Thread.Sleep(50);
-            }
+            catch { }
         }, ct);
     }
 }
