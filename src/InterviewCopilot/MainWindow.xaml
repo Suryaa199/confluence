@@ -54,14 +54,16 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <!-- Sidebar -->
-            <StackPanel Grid.Column="0" Background="{DynamicResource SurfaceLow}" Padding="8" >
-                <TextBlock Text="Navigation" Style="{StaticResource Subtitle}"/>
-                <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsInterviewView}" Command="{Binding ShowInterviewCommand}" Content="Interview"/>
-                <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsCheatView}" Command="{Binding ShowCheatCommand}" Content="Cheat Sheet"/>
-                <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsStoriesView}" Command="{Binding ShowStoriesCommand}" Content="Stories"/>
-                <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsSettingsView}" Command="{Binding ShowSettingsCommand}" Content="Settings"/>
-                <TextBlock Text="Hotkeys: Alt+P overlay, Alt+C copy, Alt+G regen, Alt+S pause" TextWrapping="Wrap" Margin="0,12,0,0"/>
-            </StackPanel>
+            <Border Grid.Column="0" Background="{DynamicResource SurfaceLow}" Padding="8">
+                <StackPanel>
+                    <TextBlock Text="Navigation" Style="{StaticResource Subtitle}"/>
+                    <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsInterviewView}" Command="{Binding ShowInterviewCommand}" Content="Interview"/>
+                    <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsCheatView}" Command="{Binding ShowCheatCommand}" Content="Cheat Sheet"/>
+                    <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsStoriesView}" Command="{Binding ShowStoriesCommand}" Content="Stories"/>
+                    <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsSettingsView}" Command="{Binding ShowSettingsCommand}" Content="Settings"/>
+                    <TextBlock Text="Hotkeys: Alt+P overlay, Alt+C copy, Alt+G regen, Alt+S pause" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                </StackPanel>
+            </Border>
             <Border Grid.ColumnSpan="2" Background="#22111111" CornerRadius="6" Padding="12" Visibility="{Binding OnboardingVisible, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
                     <TextBlock Text="Get Started" Style="{StaticResource Title}"/>
