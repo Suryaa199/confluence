@@ -43,6 +43,13 @@ public partial class SettingsWindow : Window
         PreferredProcBox.Text = s.PreferredProcessName ?? string.Empty;
         SpeakAnswersBox.IsChecked = s.SpeakAnswers;
         TtsCommBox.IsChecked = s.TtsUseCommunications;
+        // Providers
+        SelectComboByContent(LlmProviderBox, s.LlmProvider);
+        SelectComboByContent(AsrProviderBox, s.AsrProvider);
+        OllamaUrlBox.Text = s.OllamaBaseUrl;
+        OllamaModelBox.Text = s.OllamaModel;
+        FwUrlBox.Text = s.FasterWhisperUrl;
+        FwModelBox.Text = s.FasterWhisperModel;
     }
 
     private void OnSave(object sender, RoutedEventArgs e)
@@ -64,6 +71,12 @@ public partial class SettingsWindow : Window
         s.PreferredProcessName = PreferredProcBox.Text ?? string.Empty;
         s.SpeakAnswers = SpeakAnswersBox.IsChecked == true;
         s.TtsUseCommunications = TtsCommBox.IsChecked == true;
+        s.LlmProvider = (LlmProviderBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? s.LlmProvider;
+        s.AsrProvider = (AsrProviderBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? s.AsrProvider;
+        s.OllamaBaseUrl = OllamaUrlBox.Text ?? s.OllamaBaseUrl;
+        s.OllamaModel = OllamaModelBox.Text ?? s.OllamaModel;
+        s.FasterWhisperUrl = FwUrlBox.Text ?? s.FasterWhisperUrl;
+        s.FasterWhisperModel = FwModelBox.Text ?? s.FasterWhisperModel;
         _settings.Save(s);
         if (!string.IsNullOrWhiteSpace(ApiKeyBox.Password))
         {
@@ -71,6 +84,17 @@ public partial class SettingsWindow : Window
         }
         MessageBox.Show(this, "Saved", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
         Close();
+    }
+
+    private static void SelectComboByContent(System.Windows.Controls.ComboBox combo, string content)
+    {
+        combo.SelectedItem = null;
+        foreach (var it in combo.Items)
+        {
+            if ((it as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() == content)
+            { combo.SelectedItem = it; break; }
+        }
+        if (combo.SelectedItem == null) combo.SelectedIndex = 0;
     }
 
     private async void OnSearchStories(object sender, RoutedEventArgs e)

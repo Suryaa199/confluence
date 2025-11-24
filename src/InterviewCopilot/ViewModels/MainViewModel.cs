@@ -19,6 +19,17 @@ public class MainViewModel : INotifyPropertyChanged
     private InterviewCopilot.Windows.OverlayWindow? _overlay;
     private bool _paused;
     private Services.AudioOptions? _lastOptions;
+    private bool _onboardingVisible;
+    private string _apiStatus = "Unknown";
+    private bool _isCapturing;
+    private bool _isInterviewView;
+    private bool _isCheatView;
+    private bool _isStoriesView;
+    private bool _isSettingsView;
+    private string _cheatSheetText = string.Empty;
+    private double _peakLevel;
+    private string _storyQuery = string.Empty;
+    private int? _storyDaysFilter;
 
     public string LiveQuestion { get => _liveQuestion; set { _liveQuestion = value; OnPropertyChanged(); } }
     public string LiveAnswer { get => _liveAnswer; set { _liveAnswer = value; OnPropertyChanged(); } }
@@ -42,13 +53,23 @@ public class MainViewModel : INotifyPropertyChanged
 
     private double _level;
     public double Level { get => _level; set { _level = value; OnPropertyChanged(); } }
+    public bool OnboardingVisible { get => _onboardingVisible; set { _onboardingVisible = value; OnPropertyChanged(); } }
+    public string ApiStatus { get => _apiStatus; set { _apiStatus = value; OnPropertyChanged(); } }
+    public bool IsCapturing { get => _isCapturing; set { _isCapturing = value; OnPropertyChanged(); OnPropertyChanged(nameof(ToggleCaptureLabel)); } }
+    public string ToggleCaptureLabel => IsCapturing ? "Stop Listening" : "Start Listening";
+    public bool IsInterviewView { get => _isInterviewView; set { _isInterviewView = value; OnPropertyChanged(); } }
+    public bool IsCheatView { get => _isCheatView; set { _isCheatView = value; OnPropertyChanged(); } }
+    public bool IsStoriesView { get => _isStoriesView; set { _isStoriesView = value; OnPropertyChanged(); } }
+    public bool IsSettingsView { get => _isSettingsView; set { _isSettingsView = value; OnPropertyChanged(); } }
+    public double PeakLevel { get => _peakLevel; set { _peakLevel = value; OnPropertyChanged(); } }
+    public string StoryQuery { get => _storyQuery; set { _storyQuery = value; OnPropertyChanged(); } }
+    public int? StoryDaysFilter { get => _storyDaysFilter; set { _storyDaysFilter = value; OnPropertyChanged(); } }
 
     public ObservableCollection<DeviceItem> AudioEndpoints { get; } = new();
     private DeviceItem? _selectedAudioEndpoint;
     public DeviceItem? SelectedAudioEndpoint { get => _selectedAudioEndpoint; set { _selectedAudioEndpoint = value; OnPropertyChanged(); } }
 
-    public ICommand StartCommand { get; }
-    public ICommand StopCommand { get; }
+    public ICommand ToggleCaptureCommand { get; }
     public ICommand ToggleOverlayCommand { get; }
     public ICommand OpenSettingsCommand { get; }
     public ICommand TestLevelsCommand { get; }
@@ -57,31 +78,63 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand ToggleClickThroughCommand { get; }
     public ICommand PauseCommand { get; }
     public ICommand OpenPerAppPickerCommand { get; }
+    public ICommand SaveKeyCommand { get; }
+    public ICommand ShowInterviewCommand { get; }
+    public ICommand ShowCheatCommand { get; }
+    public ICommand ShowStoriesCommand { get; }
+    public ICommand ShowSettingsCommand { get; }
+    public ICommand StorySearchCommand { get; }
+    public ICommand SetFilterCommand { get; }
+    public ICommand ClearFilterCommand { get; }
+    private string _openAiKeyInput = string.Empty;
+    public ObservableCollection<string> StorySearchResults { get; } = new();
+    public string CheatSheetText { get => _cheatSheetText; set { _cheatSheetText = value; OnPropertyChanged(); } }
+    public string OpenAiKeyInput { get => _openAiKeyInput; set { _openAiKeyInput = value; OnPropertyChanged(); } }
 
     public MainViewModel()
     {
-        StartCommand = new RelayCommand(_ => Start());
-        StopCommand = new RelayCommand(_ => Stop());
+        ToggleCaptureCommand = new RelayCommand(_ => ToggleCapture());
         ToggleOverlayCommand = new RelayCommand(_ => ToggleOverlay());
         OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
         TestLevelsCommand = new RelayCommand(async _ => await TestLevelsAsync(), _ => _orchestrator is null);
         CopyAnswerCommand = new RelayCommand(_ => CopyAnswer(), _ => !string.IsNullOrEmpty(LiveAnswer));
         RegenerateCommand = new RelayCommand(async _ => await RegenerateAsync(), _ => _orchestrator is not null || !string.IsNullOrEmpty(LiveQuestion));
-        Services.AppServices.Audio.OnLevel += v => Level = v;
+        Services.AppServices.Audio.OnLevel += v => { Level = v; PeakLevel = Math.Max(v, PeakLevel * 0.9); };
         ToggleClickThroughCommand = new RelayCommand(_ => ToggleClickThrough());
         PauseCommand = new RelayCommand(async _ => await TogglePauseAsync());
         OpenPerAppPickerCommand = new RelayCommand(_ => OpenPerAppPicker());
+        SaveKeyCommand = new RelayCommand(_ => SaveKey());
+        ShowInterviewCommand = new RelayCommand(_ => SetView("interview"));
+        ShowCheatCommand = new RelayCommand(_ => SetView("cheat"));
+        ShowStoriesCommand = new RelayCommand(_ => SetView("stories"));
+        ShowSettingsCommand = new RelayCommand(_ => SetView("settings"));
+        StorySearchCommand = new RelayCommand(async _ => await StorySearchAsync());
+        SetFilterCommand = new RelayCommand(async d => { if (d is string s && int.TryParse(s, out var days)) StoryDaysFilter = days; await StorySearchAsync(); });
+        ClearFilterCommand = new RelayCommand(async _ => { StoryDaysFilter = null; await StorySearchAsync(); });
         RefreshEndpoints();
+        RefreshStatus();
+        SetView("interview");
+    }
+
+    private void RefreshStatus()
+    {
+        var s = Services.AppServices.LoadSettings();
+        var isLocal = string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase) || string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase);
+        var hasKey = Services.AppServices.HasOpenAiKey();
+        ApiStatus = isLocal ? "Local providers configured" : (hasKey ? "OpenAI key saved" : "OpenAI key missing");
+        OnboardingVisible = !isLocal && !hasKey;
     }
 
     private async void Start()
     {
+        RefreshStatus();
         AudioStatus = "Capturing";
         AsrStatus = "Listening";
         LlmStatus = "Ready";
         LiveQuestion = "";
         LiveAnswer = "";
         FollowUps.Clear();
+        IsCapturing = true;
 
         _orchestrator = Services.AppServices.CreateOrchestrator();
         _orchestrator.OnTranscript += text =>
@@ -143,6 +196,12 @@ public class MainViewModel : INotifyPropertyChanged
             await _orchestrator.StopAsync();
             _orchestrator = null;
         }
+        IsCapturing = false;
+    }
+
+    private void ToggleCapture()
+    {
+        if (IsCapturing) Stop(); else Start();
     }
 
     private async Task TestLevelsAsync()
@@ -282,6 +341,80 @@ public class MainViewModel : INotifyPropertyChanged
         var w = new InterviewCopilot.Windows.PerAppPickerWindow();
         w.Owner = System.Windows.Application.Current.MainWindow;
         w.ShowDialog();
+    }
+
+    private void SaveKey()
+    {
+        try
+        {
+            var key = (OpenAiKeyInput ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(key)) return;
+            var secrets = new Services.DpapiSecretStore();
+            secrets.SaveSecret("OpenAI:ApiKey", key);
+            OpenAiKeyInput = string.Empty;
+            RefreshStatus();
+        }
+        catch { }
+    }
+
+    private void SetView(string v)
+    {
+        IsInterviewView = v == "interview";
+        IsCheatView = v == "cheat";
+        IsStoriesView = v == "stories";
+        IsSettingsView = v == "settings";
+        if (IsCheatView) LoadCheatSheet();
+        if (IsStoriesView) _ = StorySearchAsync();
+    }
+
+    private void LoadCheatSheet()
+    {
+        var s = Services.AppServices.LoadSettings();
+        CheatSheetText = s.CheatSheet ?? string.Empty;
+    }
+
+    private async Task StorySearchAsync()
+    {
+        StorySearchResults.Clear();
+        var list = await Services.AppServices.Stories.SearchAsync(StoryQuery ?? string.Empty);
+        if (StoryDaysFilter.HasValue)
+        {
+            var cutoff = DateTimeOffset.Now.AddDays(-StoryDaysFilter.Value);
+            list = list.Where(x => x.At >= cutoff).ToList();
+        }
+        foreach (var it in list.OrderByDescending(x => x.At))
+        {
+            var snippet = it.Answer.Length > 80 ? it.Answer.Substring(0, 80) + "..." : it.Answer;
+            StorySearchResults.Add($"{it.At:u} | {it.Question} -> {snippet}");
+        }
+    }
+
+    private void SetView(string v)
+    {
+        IsInterviewView = v == "interview";
+        IsCheatView = v == "cheat";
+        IsStoriesView = v == "stories";
+        IsSettingsView = v == "settings";
+        if (IsCheatView) LoadCheatSheet();
+        if (IsStoriesView) _ = StorySearchAsync();
+    }
+
+    private void LoadCheatSheet()
+    {
+        var s = Services.AppServices.LoadSettings();
+        _cheatSheetText = s.CheatSheet ?? string.Empty;
+        OnPropertyChanged(nameof(CheatSheetText));
+    }
+
+    private async Task StorySearchAsync()
+    {
+        StorySearchResults.Clear();
+        var list = await Services.AppServices.Stories.SearchAsync("");
+        foreach (var it in list.OrderByDescending(x => x.At))
+        {
+            var snippet = it.Answer.Length > 80 ? it.Answer.Substring(0, 80) + "..." : it.Answer;
+            StorySearchResults.Add($"{it.At:u} | {it.Question} -> {snippet}");
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

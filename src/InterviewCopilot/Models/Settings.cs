@@ -16,4 +16,16 @@ public class Settings
     public string? PreferredProcessName { get; set; }
     public bool SpeakAnswers { get; set; } = false;
     public bool TtsUseCommunications { get; set; } = true;
+
+    // Providers
+    public string LlmProvider { get; set; } = "OpenAI"; // OpenAI | Ollama
+    public string AsrProvider { get; set; } = "OpenAI"; // OpenAI | Local
+
+    // Ollama (Local LLM)
+    public string OllamaBaseUrl { get; set; } = "http://localhost:11434";
+    public string OllamaModel { get; set; } = "llama3.1:8b-instruct";
+
+    // Faster-Whisper (Local ASR)
+    public string FasterWhisperUrl { get; set; } = "http://localhost:5055"; // custom server
+    public string FasterWhisperModel { get; set; } = "base";
 }

@@ -32,6 +32,26 @@
                 <TextBlock Text="ASR Model" Margin="0,16,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="AsrModelBox" Text="whisper-1"/>
 
+                <TextBlock Text="LLM Provider" Margin="0,16,0,0" FontWeight="Bold"/>
+                <ComboBox x:Name="LlmProviderBox" SelectedIndex="0">
+                    <ComboBoxItem Content="OpenAI"/>
+                    <ComboBoxItem Content="Ollama"/>
+                </ComboBox>
+                <TextBlock Text="Ollama Base URL"/>
+                <TextBox x:Name="OllamaUrlBox" Text="http://localhost:11434"/>
+                <TextBlock Text="Ollama Model"/>
+                <TextBox x:Name="OllamaModelBox" Text="llama3.1:8b-instruct"/>
+
+                <TextBlock Text="ASR Provider" Margin="0,16,0,0" FontWeight="Bold"/>
+                <ComboBox x:Name="AsrProviderBox" SelectedIndex="0">
+                    <ComboBoxItem Content="OpenAI"/>
+                    <ComboBoxItem Content="Local"/>
+                </ComboBox>
+                <TextBlock Text="Faster-Whisper URL"/>
+                <TextBox x:Name="FwUrlBox" Text="http://localhost:5055"/>
+                <TextBlock Text="Faster-Whisper Model"/>
+                <TextBox x:Name="FwModelBox" Text="base"/>
+
                 <TextBlock Text="Resume (txt)" Margin="0,16,0,0" FontWeight="Bold"/>
                 <StackPanel Orientation="Horizontal">
                     <Button Content="Load .txt" Click="OnLoadResume" Margin="0,0,8,0"/>

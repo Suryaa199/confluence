@@ -7,5 +7,77 @@
     <Style TargetType="Border">
         <Setter Property="SnapsToDevicePixels" Value="True"/>
     </Style>
-</ResourceDictionary>
 
+    <!-- Dark theme for inputs -->
+    <SolidColorBrush x:Key="InputBg" Color="#2A2A2E"/>
+    <SolidColorBrush x:Key="InputBorder" Color="#3A3A3F"/>
+    <SolidColorBrush x:Key="InputFg" Color="#EEEEEE"/>
+
+    <Style TargetType="Button">
+        <Setter Property="Foreground" Value="#EFEFEF"/>
+        <Setter Property="Background" Value="#2A2A2E"/>
+        <Setter Property="BorderBrush" Value="#3A3A3F"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="Margin" Value="4,0,0,0"/>
+    </Style>
+
+    <Style x:Key="PrimaryButton" TargetType="Button">
+        <Setter Property="Foreground" Value="#000000"/>
+        <Setter Property="Background" Value="{DynamicResource Primary}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Primary}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="8,0,0,0"/>
+    </Style>
+
+    <Style TargetType="TextBox">
+        <Setter Property="Foreground" Value="{StaticResource InputFg}"/>
+        <Setter Property="Background" Value="{StaticResource InputBg}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,4"/>
+    </Style>
+    <Style TargetType="PasswordBox">
+        <Setter Property="Foreground" Value="{StaticResource InputFg}"/>
+        <Setter Property="Background" Value="{StaticResource InputBg}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,4"/>
+    </Style>
+    <Style TargetType="ComboBox">
+        <Setter Property="Foreground" Value="{StaticResource InputFg}"/>
+        <Setter Property="Background" Value="{StaticResource InputBg}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,4"/>
+    </Style>
+    <Style TargetType="ListBox">
+        <Setter Property="Foreground" Value="{StaticResource InputFg}"/>
+        <Setter Property="Background" Value="{StaticResource InputBg}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!-- Sidebar toggle style -->
+    <Style x:Key="SidebarToggle" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="#EFEFEF"/>
+        <Setter Property="Background" Value="#1F1F22"/>
+        <Setter Property="BorderBrush" Value="#3A3A3F"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="Margin" Value="0,4,0,0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Background" Value="{DynamicResource Primary}"/>
+                <Setter Property="Foreground" Value="#000"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Primary}"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource Primary}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

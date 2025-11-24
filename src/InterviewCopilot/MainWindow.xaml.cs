@@ -1,4 +1,7 @@
 using System.Windows;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using InterviewCopilot.ViewModels;
 
 namespace InterviewCopilot;
@@ -9,6 +12,26 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = new MainViewModel();
+        try
+        {
+            var asm = System.Reflection.Assembly.GetExecutingAssembly();
+            var path = asm.Location;
+            var t = File.GetLastWriteTime(path);
+            string shortHash = "";
+            try
+            {
+                using var sha = SHA256.Create();
+                using var fs = File.OpenRead(path);
+                var hash = sha.ComputeHash(fs);
+                var sb = new StringBuilder();
+                for (int i = 0; i < 4; i++) sb.Append(hash[i].ToString("x2"));
+                shortHash = sb.ToString();
+            }
+            catch { }
+            this.Title = string.IsNullOrEmpty(shortHash)
+                ? $"Interview Copilot — Build {t:yyyy-MM-dd HH:mm}"
+                : $"Interview Copilot — {shortHash} — {t:yyyy-MM-dd HH:mm}";
+        }
+        catch { }
     }
 }
-

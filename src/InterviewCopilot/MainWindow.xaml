@@ -15,7 +15,15 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0" Background="{DynamicResource SurfaceLow}" LastChildFill="False" Margin="0,0,0,0">
-            <TextBlock Text="Interview Copilot" Style="{StaticResource Title}" Margin="0,0,12,0"/>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Interview Copilot" Style="{StaticResource Title}" Margin="0,0,12,0"/>
+                <TextBlock Text=" | " Margin="4,0"/>
+                <TextBlock Text="{Binding ApiStatus}" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" Margin="12,0,0,0" Visibility="{Binding OnboardingVisible, Converter={x:Static BooleanToVisibilityConverter.Instance}}">
+                    <TextBox Width="220" Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}"/>
+                    <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
+                </StackPanel>
+            </StackPanel>
             <ComboBox Width="140" ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}"/>
             <ComboBox Width="180" ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name"/>
             <ComboBox Width="150" ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}"/>
@@ -24,20 +32,51 @@
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                 <TextBlock Text="Level" VerticalAlignment="Center" Margin="0,0,6,0"/>
                 <ProgressBar Width="120" Height="12" Minimum="0" Maximum="1" Value="{Binding Level}"/>
+                <Rectangle Width="4" Height="12" Fill="{DynamicResource Primary}" Margin="6,0,0,0">
+                    <Rectangle.LayoutTransform>
+                        <ScaleTransform ScaleX="{Binding PeakLevel}"/>
+                    </Rectangle.LayoutTransform>
+                </Rectangle>
+                <TextBlock Text="Endpoint:" Margin="12,0,0,0"/>
+                <TextBlock Text="{Binding SelectedAudioEndpoint.Name}"/>
+                <TextBlock Text=", Device:"/>
+                <TextBlock Text="{Binding SelectedDevicePreference}"/>
                 <Button Content="Test Levels" Margin="8,0,0,0" Padding="10,4" Command="{Binding TestLevelsCommand}"/>
             </StackPanel>
-            <Button Content="Start" Margin="4,0" Padding="12,4" Command="{Binding StartCommand}"/>
-            <Button Content="Stop" Margin="4,0" Padding="12,4" Command="{Binding StopCommand}"/>
+            <Button Content="{Binding ToggleCaptureLabel}" Style="{StaticResource PrimaryButton}" Command="{Binding ToggleCaptureCommand}"/>
             <Button Content="Overlay" Margin="4,0" Padding="12,4" Command="{Binding ToggleOverlayCommand}"/>
             <Button Content="Settings" Margin="4,0" Padding="12,4" Command="{Binding OpenSettingsCommand}"/>
         </DockPanel>
 
         <Grid Grid.Row="1" Margin="12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Border Grid.Column="0" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Margin="0,0,8,0">
+            <!-- Sidebar -->
+            <StackPanel Grid.Column="0" Background="{DynamicResource SurfaceLow}" Padding="8" >
+                <TextBlock Text="Navigation" Style="{StaticResource Subtitle}"/>
+                <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsInterviewView}" Command="{Binding ShowInterviewCommand}" Content="Interview"/>
+                <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsCheatView}" Command="{Binding ShowCheatCommand}" Content="Cheat Sheet"/>
+                <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsStoriesView}" Command="{Binding ShowStoriesCommand}" Content="Stories"/>
+                <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsSettingsView}" Command="{Binding ShowSettingsCommand}" Content="Settings"/>
+                <TextBlock Text="Hotkeys: Alt+P overlay, Alt+C copy, Alt+G regen, Alt+S pause" TextWrapping="Wrap" Margin="0,12,0,0"/>
+            </StackPanel>
+            <Border Grid.ColumnSpan="2" Background="#22111111" CornerRadius="6" Padding="12" Visibility="{Binding OnboardingVisible, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="Get Started" Style="{StaticResource Title}"/>
+                    <TextBlock Text="Enter your OpenAI API key or switch to local providers in Settings." Margin="0,8,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBox Width="280" Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="Open Settings" Command="{Binding OpenSettingsCommand}"/>
+                        <Button Content="Per-App Picker" Command="{Binding OpenPerAppPickerCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Margin="0,0,8,0" Visibility="{Binding IsInterviewView, Converter={StaticResource BoolToVis}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <TextBlock Text="Question (live transcription)" Style="{StaticResource Subtitle}"/>
@@ -60,13 +99,50 @@
                     </StackPanel>
                 </ScrollViewer>
             </Border>
-            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8">
+            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsInterviewView, Converter={StaticResource BoolToVis}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <TextBlock Text="Answer (streaming)" Style="{StaticResource Subtitle}"/>
                         <TextBlock Text="{Binding LiveAnswer}" TextWrapping="Wrap" Margin="0,8,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
+            </Border>
+
+            <!-- Cheat Sheet View -->
+            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsCheatView, Converter={StaticResource BoolToVis}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Cheat Sheet" Style="{StaticResource Subtitle}"/>
+                        <TextBlock Text="{Binding CheatSheetText}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Stories View -->
+            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsStoriesView, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="Stories" Style="{StaticResource Subtitle}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
+                        <TextBox Width="240" Text="{Binding StoryQuery, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Content="Search" Command="{Binding StorySearchCommand}"/>
+                        <Button Content="Today" Command="{Binding SetFilterCommand}" CommandParameter="0" Margin="8,0,0,0"/>
+                        <Button Content="7d" Command="{Binding SetFilterCommand}" CommandParameter="7"/>
+                        <Button Content="30d" Command="{Binding SetFilterCommand}" CommandParameter="30"/>
+                        <Button Content="Clear" Command="{Binding ClearFilterCommand}"/>
+                    </StackPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ListBox ItemsSource="{Binding StorySearchResults}"/>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
+            <!-- Settings View redirect -->
+            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsSettingsView, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="Settings" Style="{StaticResource Subtitle}"/>
+                    <TextBlock Text="Open the Settings window to edit preferences." Margin="0,8,0,8"/>
+                    <Button Content="Open Settings" Command="{Binding OpenSettingsCommand}"/>
+                </StackPanel>
             </Border>
         </Grid>
 

@@ -18,6 +18,12 @@ public static class AppServices
 
     public static Settings LoadSettings() => SettingsStore.Load();
 
+    public static bool HasOpenAiKey()
+    {
+        var key = SecretStore.GetSecret("OpenAI:ApiKey");
+        return !string.IsNullOrWhiteSpace(key);
+    }
+
     public static Orchestrator CreateOrchestrator()
     {
         ReloadAiClients();
@@ -26,15 +32,25 @@ public static class AppServices
 
     private static ILlmService CreateLlm()
     {
+        var s = LoadSettings();
+        if (string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase))
+        {
+            return new Local.OllamaLlmService(s.OllamaBaseUrl, s.OllamaModel);
+        }
         var key = SecretStore.GetSecret("OpenAI:ApiKey");
-        var model = LoadSettings().ChatModel ?? "gpt-4o-mini";
+        var model = s.ChatModel ?? "gpt-4o-mini";
         return string.IsNullOrWhiteSpace(key) ? new NoopLlmService() : new OpenAI.OpenAiLlmService(key, model);
     }
 
     private static IAsrService CreateAsr()
     {
+        var s = LoadSettings();
+        if (string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase))
+        {
+            return new Local.LocalAsrService(s.FasterWhisperUrl, s.FasterWhisperModel);
+        }
         var key = SecretStore.GetSecret("OpenAI:ApiKey");
-        var model = LoadSettings().AsrModel ?? "whisper-1";
+        var model = s.AsrModel ?? "whisper-1";
         return string.IsNullOrWhiteSpace(key) ? new NoopAsrService() : new OpenAI.OpenAiWhisperAsrService(key) { Model = model };
     }
 
