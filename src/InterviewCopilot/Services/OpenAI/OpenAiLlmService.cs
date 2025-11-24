@@ -41,7 +41,7 @@ public sealed class OpenAiLlmService : ILlmService
         using var res = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
         res.EnsureSuccessStatusCode();
         using var stream = await res.Content.ReadAsStreamAsync(ct);
-        using var reader = new StreamReader(stream);
+        using var reader = new System.IO.StreamReader(stream);
         string? line;
         while ((line = await reader.ReadLineAsync()) is not null)
         {
@@ -51,6 +51,7 @@ public sealed class OpenAiLlmService : ILlmService
             if (!line.StartsWith("data:")) continue;
             var payload = line.Substring(5).Trim();
             if (payload == "[DONE]") yield break;
+            string? tokenToYield = null;
             try
             {
                 using var doc = JsonDocument.Parse(payload);
@@ -59,10 +60,11 @@ public sealed class OpenAiLlmService : ILlmService
                 if (delta.TryGetProperty("content", out var content))
                 {
                     var t = content.GetString();
-                    if (!string.IsNullOrEmpty(t)) yield return t;
+                    if (!string.IsNullOrEmpty(t)) tokenToYield = t;
                 }
             }
             catch { /* swallow parse errors for robustness */ }
+            if (!string.IsNullOrEmpty(tokenToYield)) yield return tokenToYield;
         }
     }
 }

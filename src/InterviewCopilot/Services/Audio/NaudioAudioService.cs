@@ -118,7 +118,7 @@ public sealed class NaudioAudioService : IAudioService
         var cap = sender as IWaveIn;
         var format = (cap as WasapiCapture)?.WaveFormat ?? (cap as WasapiLoopbackCapture)?.WaveFormat;
         if (format is null) return;
-        var samples = BytesToMonoFloat(e.Buffer, e.BytesRecorded, format.Value);
+        var samples = BytesToMonoFloat(e.Buffer, e.BytesRecorded, format);
         // Level meter (RMS)
         double sum = 0;
         for (int i = 0; i < samples.Length; i++) { var v = samples[i]; sum += v * v; }
@@ -129,7 +129,7 @@ public sealed class NaudioAudioService : IAudioService
         {
             if (!_sessionActive) return;
         }
-        OnFrame?.Invoke(new AudioFrame { Samples = samples, SampleRate = format.Value.SampleRate });
+        OnFrame?.Invoke(new AudioFrame { Samples = samples, SampleRate = format.SampleRate });
     }
 
     private static float[] BytesToMonoFloat(byte[] buffer, int count, WaveFormat fmt)
@@ -221,7 +221,7 @@ public sealed class NaudioAudioService : IAudioService
             string proc = string.Empty;
             try
             {
-                if (s is AudioSessionControl2 s2)
+                if (s is NAudio.CoreAudioApi.AudioSessionControl2 s2)
                 {
                     proc = (s2.Process?.ProcessName ?? string.Empty).ToLowerInvariant();
                 }

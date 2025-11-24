@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.IO;
 
 namespace InterviewCopilot.Services;
 
@@ -74,4 +75,3 @@ public sealed class DiskOfflineSpooler : IOfflineSpooler
         }
     }
 }
-
