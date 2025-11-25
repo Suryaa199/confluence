@@ -182,12 +182,33 @@ public sealed class NaudioAudioService : IAudioService
     public IReadOnlyList<AudioEndpoint> ListEndpoints(AudioSourceKind source)
     {
         var flow = (source == AudioSourceKind.Microphone) ? DataFlow.Capture : DataFlow.Render;
-        var enumerator = new MMDeviceEnumerator();
         var list = new List<AudioEndpoint>();
-        foreach (var dev in enumerator.EnumerateAudioEndPoints(flow, DeviceState.Active))
+        try
         {
-            list.Add(new AudioEndpoint { Id = dev.ID, Name = dev.FriendlyName });
+            var enumerator = new MMDeviceEnumerator();
+            // Always include logical defaults first for UX clarity
+            try
+            {
+                var defMultimedia = enumerator.GetDefaultAudioEndpoint(flow, Role.Multimedia);
+                if (defMultimedia is not null)
+                    list.Add(new AudioEndpoint { Id = defMultimedia.ID, Name = defMultimedia.FriendlyName + " (Default)" });
+            }
+            catch { }
+            try
+            {
+                var defComm = enumerator.GetDefaultAudioEndpoint(flow, Role.Communications);
+                if (defComm is not null && !list.Any(e => e.Id == defComm.ID))
+                    list.Add(new AudioEndpoint { Id = defComm.ID, Name = defComm.FriendlyName + " (Communications)" });
+            }
+            catch { }
+            // Then list all active endpoints
+            foreach (var dev in new MMDeviceEnumerator().EnumerateAudioEndPoints(flow, DeviceState.Active))
+            {
+                if (!list.Any(e => e.Id == dev.ID))
+                    list.Add(new AudioEndpoint { Id = dev.ID, Name = dev.FriendlyName });
+            }
         }
+        catch { }
         return list;
     }
 

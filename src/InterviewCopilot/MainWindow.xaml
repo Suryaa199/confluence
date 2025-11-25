@@ -85,15 +85,43 @@
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,8">
                         <TextBlock Text="Transcript (question)" Style="{StaticResource Subtitle}"/>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Height="100">
-                            <TextBlock Text="{Binding LiveQuestion}" TextWrapping="Wrap"/>
-                        </ScrollViewer>
+                        <Grid Height="100">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <TextBlock Text="{Binding LiveQuestion}" TextWrapping="Wrap"/>
+                            </ScrollViewer>
+                            <TextBlock Text="Start Listening to populate transcript..." Foreground="#999" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding LiveQuestion}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
                     </StackPanel>
                     <StackPanel Grid.Row="1">
                         <TextBlock Text="Answer" Style="{StaticResource Subtitle}"/>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <TextBlock Text="{Binding LiveAnswer}" TextWrapping="Wrap"/>
-                        </ScrollViewer>
+                        <Grid>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <TextBlock Text="{Binding LiveAnswer}" TextWrapping="Wrap"/>
+                            </ScrollViewer>
+                            <TextBlock Text="Answer will appear here..." Foreground="#999" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding LiveAnswer}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
                     </StackPanel>
                     <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,8,0,0">
                         <TextBlock Text="Follow-ups" Style="{StaticResource Subtitle}"/>
@@ -123,9 +151,23 @@
             <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsCheatView, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
                     <TextBlock Text="Cheat Sheet" Style="{StaticResource Subtitle}"/>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <TextBlock Text="{Binding CheatSheetText}" TextWrapping="Wrap"/>
-                    </ScrollViewer>
+                    <Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding CheatSheetText}" TextWrapping="Wrap"/>
+                        </ScrollViewer>
+                        <TextBlock Text="Generate a Cheat Sheet from Settings to see content here." Foreground="#999" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CheatSheetText}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
                 </StackPanel>
             </Border>
 
@@ -160,13 +202,22 @@
         <!-- Status bar -->
         <StatusBar Grid.Row="2">
             <StatusBarItem>
-                <TextBlock Text="Audio: {Binding AudioStatus}"/>
+                <TextBlock>
+                    <Run Text="Audio: "/>
+                    <Run Text="{Binding AudioStatus}"/>
+                </TextBlock>
             </StatusBarItem>
             <StatusBarItem>
-                <TextBlock Text="ASR: {Binding AsrStatus}"/>
+                <TextBlock>
+                    <Run Text="ASR: "/>
+                    <Run Text="{Binding AsrStatus}"/>
+                </TextBlock>
             </StatusBarItem>
             <StatusBarItem>
-                <TextBlock Text="LLM: {Binding LlmStatus}"/>
+                <TextBlock>
+                    <Run Text="LLM: "/>
+                    <Run Text="{Binding LlmStatus}"/>
+                </TextBlock>
             </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Text="{Binding VadStatus}"/>

@@ -25,7 +25,15 @@ public partial class PerAppPickerWindow : Window
         {
             var items = new List<SessionItem>();
             var enumerator = new MMDeviceEnumerator();
-            var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            // Try to use Communications device if the app is configured to do so.
+            MMDevice device;
+            try
+            {
+                var s = new InterviewCopilot.Services.JsonSettingsStore().Load();
+                var prefRole = s.TtsUseCommunications ? Role.Communications : Role.Multimedia;
+                device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, prefRole);
+            }
+            catch { device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia); }
             var sessions = device.AudioSessionManager?.Sessions;
             if (sessions != null)
             {
@@ -53,7 +61,9 @@ public partial class PerAppPickerWindow : Window
                     if (!string.IsNullOrEmpty(proc)) items.Add(new SessionItem(proc, title, lvl));
                 }
             }
-            List.ItemsSource = items.OrderByDescending(x => x.Level).ToList();
+            var ordered = items.OrderByDescending(x => x.Level).ToList();
+            List.ItemsSource = ordered;
+            EmptyText.Visibility = ordered.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         catch (Exception ex)
         {
@@ -77,4 +87,3 @@ public partial class PerAppPickerWindow : Window
 
     private void OnClose(object sender, RoutedEventArgs e) => Close();
 }
-

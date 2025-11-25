@@ -13,20 +13,24 @@
             <TextBlock Text="Selected:" Margin="8,0,0,0"/>
             <TextBlock x:Name="SelectedText"/>
         </StackPanel>
-        <ListView x:Name="List" Grid.Row="1" SelectionMode="Single">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Process" DisplayMemberBinding="{Binding ProcessName}" Width="180"/>
-                    <GridViewColumn Header="Title" DisplayMemberBinding="{Binding WindowTitle}" Width="220"/>
-                    <GridViewColumn Header="Level" Width="60">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <ProgressBar Minimum="0" Maximum="1" Value="{Binding Level}" Height="12"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
+        <Grid Grid.Row="1">
+            <ListView x:Name="List" SelectionMode="Single">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Process" DisplayMemberBinding="{Binding ProcessName}" Width="180"/>
+                        <GridViewColumn Header="Title" DisplayMemberBinding="{Binding WindowTitle}" Width="220"/>
+                        <GridViewColumn Header="Level" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding Level}" Height="12"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+            <TextBlock x:Name="EmptyText" Text="No audio sessions detected. Play audio in the selected device and click Refresh." Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"/>
+        </Grid>
         </ListView>
         <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button Content="Use" Click="OnUse"/>
@@ -34,4 +38,3 @@
         </StackPanel>
     </Grid>
 </Window>
-
