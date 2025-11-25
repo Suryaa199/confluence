@@ -75,6 +75,15 @@ public class MainViewModel : INotifyPropertyChanged
     public bool IsAnswerStreaming { get => _isAnswerStreaming; set { _isAnswerStreaming = value; OnPropertyChanged(); } }
     public bool SpeakAnswersEnabled { get => _speakAnswersEnabled; set { _speakAnswersEnabled = value; OnPropertyChanged(); } }
 
+    // Provider selectors
+    public ObservableCollection<string> LlmProviders { get; } = new(new[] { "OpenAI", "Ollama" });
+    private string _selectedLlmProvider = "OpenAI";
+    public string SelectedLlmProvider { get => _selectedLlmProvider; set { if (_selectedLlmProvider != value) { _selectedLlmProvider = value; OnPropertyChanged(); ApplyLlmProvider(value); } } }
+
+    public ObservableCollection<string> AsrProviders { get; } = new(new[] { "OpenAI", "Local" });
+    private string _selectedAsrProvider = "OpenAI";
+    public string SelectedAsrProvider { get => _selectedAsrProvider; set { if (_selectedAsrProvider != value) { _selectedAsrProvider = value; OnPropertyChanged(); ApplyAsrProvider(value); } } }
+
     public ObservableCollection<DeviceItem> AudioEndpoints { get; } = new();
     private DeviceItem? _selectedAudioEndpoint;
     public DeviceItem? SelectedAudioEndpoint { get => _selectedAudioEndpoint; set { _selectedAudioEndpoint = value; OnPropertyChanged(); } }
@@ -519,15 +528,6 @@ public class MainViewModel : INotifyPropertyChanged
     private void LoadCheatSheet()
     {
         var s = Services.AppServices.LoadSettings();
-    // Provider selectors
-    public ObservableCollection<string> LlmProviders { get; } = new(new[] { "OpenAI", "Ollama" });
-    private string _selectedLlmProvider = "OpenAI";
-    public string SelectedLlmProvider { get => _selectedLlmProvider; set { if (_selectedLlmProvider != value) { _selectedLlmProvider = value; OnPropertyChanged(); ApplyLlmProvider(value); } } }
-
-    public ObservableCollection<string> AsrProviders { get; } = new(new[] { "OpenAI", "Local" });
-    private string _selectedAsrProvider = "OpenAI";
-    public string SelectedAsrProvider { get => _selectedAsrProvider; set { if (_selectedAsrProvider != value) { _selectedAsrProvider = value; OnPropertyChanged(); ApplyAsrProvider(value); } } }
-
         CheatSheetText = s.CheatSheet ?? string.Empty;
     }
 
