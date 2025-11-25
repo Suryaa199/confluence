@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.18.1" />
   </ItemGroup>
 
   <PropertyGroup>

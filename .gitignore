@@ -1,0 +1,10 @@
+.aider*
+# dotnet build output
+bin/
+obj/
+dist/
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

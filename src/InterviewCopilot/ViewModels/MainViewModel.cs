@@ -161,6 +161,8 @@ public class MainViewModel : INotifyPropertyChanged
                 }
             });
         };
+        _orchestrator.OnAsrError += msg => AsrStatus = "Error: " + msg;
+        _orchestrator.OnLlmError += msg => LlmStatus = "Error: " + msg;
 
         var options = new Services.AudioOptions
         {
@@ -258,6 +260,8 @@ public class MainViewModel : INotifyPropertyChanged
         var context = string.Empty;
         if (settings.Keywords is { Length: > 0 }) context += "Keywords: " + string.Join(", ", settings.Keywords) + "\n";
         if (!string.IsNullOrWhiteSpace(settings.CompanyBlurb)) context += "Company: " + settings.CompanyBlurb + "\n";
+        if (!string.IsNullOrWhiteSpace(settings.ResumeText)) context += "Resume: " + settings.ResumeText + "\n";
+        if (!string.IsNullOrWhiteSpace(settings.JobDescText)) context += "JobDesc: " + settings.JobDescText + "\n";
         return context;
     }
 
@@ -382,34 +386,6 @@ public class MainViewModel : INotifyPropertyChanged
             var cutoff = DateTimeOffset.Now.AddDays(-StoryDaysFilter.Value);
             list = list.Where(x => x.At >= cutoff).ToList();
         }
-        foreach (var it in list.OrderByDescending(x => x.At))
-        {
-            var snippet = it.Answer.Length > 80 ? it.Answer.Substring(0, 80) + "..." : it.Answer;
-            StorySearchResults.Add($"{it.At:u} | {it.Question} -> {snippet}");
-        }
-    }
-
-    private void SetView(string v)
-    {
-        IsInterviewView = v == "interview";
-        IsCheatView = v == "cheat";
-        IsStoriesView = v == "stories";
-        IsSettingsView = v == "settings";
-        if (IsCheatView) LoadCheatSheet();
-        if (IsStoriesView) _ = StorySearchAsync();
-    }
-
-    private void LoadCheatSheet()
-    {
-        var s = Services.AppServices.LoadSettings();
-        _cheatSheetText = s.CheatSheet ?? string.Empty;
-        OnPropertyChanged(nameof(CheatSheetText));
-    }
-
-    private async Task StorySearchAsync()
-    {
-        StorySearchResults.Clear();
-        var list = await Services.AppServices.Stories.SearchAsync("");
         foreach (var it in list.OrderByDescending(x => x.At))
         {
             var snippet = it.Answer.Length > 80 ? it.Answer.Substring(0, 80) + "..." : it.Answer;

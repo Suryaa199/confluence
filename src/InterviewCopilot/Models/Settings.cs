@@ -8,6 +8,8 @@ public class Settings
     public string? CompanyBlurb { get; set; }
     public int VadMinVoiceMs { get; set; } = 200;
     public int VadMaxSilenceMs { get; set; } = 600;
+    public int SileroWindowMs { get; set; } = 30; // 30ms default
+    public float SileroThreshold { get; set; } = 0.5f; // 0..1 speech prob
     public string? CheatSheet { get; set; }
     public string? ResumeText { get; set; }
     public string? JobDescText { get; set; }

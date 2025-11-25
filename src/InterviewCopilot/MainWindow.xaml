@@ -3,23 +3,23 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:InterviewCopilot.ViewModels"
         mc:Ignorable="d"
         Title="Interview Copilot" Height="720" Width="1100"
         Topmost="True" WindowStartupLocation="CenterScreen">
-    <!-- DataContext is assigned in code-behind to avoid XAML compile-time instantiation. -->
     <Grid Background="{DynamicResource Surface}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <DockPanel Grid.Row="0" Background="{DynamicResource SurfaceLow}" LastChildFill="False" Margin="0,0,0,0">
+
+        <!-- Top bar -->
+        <DockPanel Grid.Row="0" Background="{DynamicResource SurfaceLow}" LastChildFill="False">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="Interview Copilot" Style="{StaticResource Title}" Margin="0,0,12,0"/>
                 <TextBlock Text=" | " Margin="4,0"/>
                 <TextBlock Text="{Binding ApiStatus}" VerticalAlignment="Center"/>
-                <StackPanel Orientation="Horizontal" Margin="12,0,0,0" Visibility="{Binding OnboardingVisible, Converter={x:Static BooleanToVisibilityConverter.Instance}}">
+                <StackPanel Orientation="Horizontal" Margin="12,0,0,0" Visibility="{Binding OnboardingVisible, Converter={StaticResource BoolToVis}}">
                     <TextBox Width="220" Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}"/>
                     <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
                 </StackPanel>
@@ -48,11 +48,13 @@
             <Button Content="Settings" Margin="4,0" Padding="12,4" Command="{Binding OpenSettingsCommand}"/>
         </DockPanel>
 
+        <!-- Center content -->
         <Grid Grid.Row="1" Margin="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+
             <!-- Sidebar -->
             <Border Grid.Column="0" Background="{DynamicResource SurfaceLow}" Padding="8">
                 <StackPanel>
@@ -64,60 +66,67 @@
                     <TextBlock Text="Hotkeys: Alt+P overlay, Alt+C copy, Alt+G regen, Alt+S pause" TextWrapping="Wrap" Margin="0,12,0,0"/>
                 </StackPanel>
             </Border>
+
+            <!-- Onboarding notice -->
             <Border Grid.ColumnSpan="2" Background="#22111111" CornerRadius="6" Padding="12" Visibility="{Binding OnboardingVisible, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <TextBlock Text="Get Started" Style="{StaticResource Title}"/>
-                    <TextBlock Text="Enter your OpenAI API key or switch to local providers in Settings." Margin="0,8,0,0"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <TextBox Width="280" Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button Content="Open Settings" Command="{Binding OpenSettingsCommand}"/>
-                        <Button Content="Per-App Picker" Command="{Binding OpenPerAppPickerCommand}"/>
-                    </StackPanel>
+                    <TextBlock Text="OpenAI key missing" Style="{StaticResource Subtitle}"/>
+                    <TextBlock Text="Enter your API key above or switch to Local providers in Settings." TextWrapping="Wrap" Margin="0,6,0,0"/>
                 </StackPanel>
             </Border>
-            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Margin="0,0,8,0" Visibility="{Binding IsInterviewView, Converter={StaticResource BoolToVis}}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <TextBlock Text="Question (live transcription)" Style="{StaticResource Subtitle}"/>
-                        <TextBlock Text="{Binding LiveQuestion}" TextWrapping="Wrap" Margin="0,8,0,0"/>
-                        <TextBlock Text="Follow-ups" Style="{StaticResource Subtitle}" Margin="0,16,0,0"/>
+
+            <!-- Interview View -->
+            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsInterviewView, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,8">
+                        <TextBlock Text="Transcript (question)" Style="{StaticResource Subtitle}"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Height="100">
+                            <TextBlock Text="{Binding LiveQuestion}" TextWrapping="Wrap"/>
+                        </ScrollViewer>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1">
+                        <TextBlock Text="Answer" Style="{StaticResource Subtitle}"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding LiveAnswer}" TextWrapping="Wrap"/>
+                        </ScrollViewer>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,8,0,0">
+                        <TextBlock Text="Follow-ups" Style="{StaticResource Subtitle}"/>
                         <ItemsControl ItemsSource="{Binding FollowUps}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="{DynamicResource ChipBg}" CornerRadius="12" Margin="0,4,8,4" Padding="8,4">
-                                        <TextBlock Text="{Binding}"/>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel/>
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource ChipBg}" CornerRadius="4" Padding="6" Margin="4,4,0,0">
+                                        <TextBlock Text="{Binding}"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Regenerate" Command="{Binding RegenerateCommand}"/>
+                            <Button Content="Copy" Command="{Binding CopyAnswerCommand}"/>
+                        </StackPanel>
                     </StackPanel>
-                </ScrollViewer>
-            </Border>
-            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsInterviewView, Converter={StaticResource BoolToVis}}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <TextBlock Text="Answer (streaming)" Style="{StaticResource Subtitle}"/>
-                        <TextBlock Text="{Binding LiveAnswer}" TextWrapping="Wrap" Margin="0,8,0,0"/>
-                    </StackPanel>
-                </ScrollViewer>
+                </Grid>
             </Border>
 
             <!-- Cheat Sheet View -->
             <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsCheatView, Converter={StaticResource BoolToVis}}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <TextBlock Text="Cheat Sheet" Style="{StaticResource Subtitle}"/>
-                        <TextBlock Text="{Binding CheatSheetText}" TextWrapping="Wrap" Margin="0,8,0,0"/>
-                    </StackPanel>
-                </ScrollViewer>
+                <StackPanel>
+                    <TextBlock Text="Cheat Sheet" Style="{StaticResource Subtitle}"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <TextBlock Text="{Binding CheatSheetText}" TextWrapping="Wrap"/>
+                    </ScrollViewer>
+                </StackPanel>
             </Border>
 
             <!-- Stories View -->
@@ -125,7 +134,7 @@
                 <StackPanel>
                     <TextBlock Text="Stories" Style="{StaticResource Subtitle}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
-                        <TextBox Width="240" Text="{Binding StoryQuery, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Width="220" Text="{Binding StoryQuery, UpdateSourceTrigger=PropertyChanged}"/>
                         <Button Content="Search" Command="{Binding StorySearchCommand}"/>
                         <Button Content="Today" Command="{Binding SetFilterCommand}" CommandParameter="0" Margin="8,0,0,0"/>
                         <Button Content="7d" Command="{Binding SetFilterCommand}" CommandParameter="7"/>
@@ -148,6 +157,7 @@
             </Border>
         </Grid>
 
+        <!-- Status bar -->
         <StatusBar Grid.Row="2">
             <StatusBarItem>
                 <TextBlock Text="Audio: {Binding AudioStatus}"/>
@@ -161,6 +171,7 @@
         </StatusBar>
     </Grid>
 
+    <!-- Hotkeys -->
     <Window.InputBindings>
         <KeyBinding Modifiers="Alt" Key="P" Command="{Binding ToggleClickThroughCommand}"/>
         <KeyBinding Modifiers="Alt" Key="C" Command="{Binding CopyAnswerCommand}"/>

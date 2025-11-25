@@ -24,6 +24,8 @@ public sealed class Orchestrator : IDisposable
     public event Action<string>? OnTranscript;
     public event Action<string>? OnAnswerToken;
     public event Action<IReadOnlyList<string>>? OnFollowUps;
+    public event Action<string>? OnAsrError;
+    public event Action<string>? OnLlmError;
 
     public Orchestrator(IAudioService audio, IVadService vad, IAsrService asr, ICoachingService coach, IOfflineSpooler spooler, Settings settings)
     {
@@ -106,10 +108,11 @@ public sealed class Orchestrator : IDisposable
                 _ = DebouncedGenerateAsync();
             }
         }
-        catch
+        catch (Exception ex)
         {
             // network error → spool and try later
             _spooler.Enqueue(wav);
+            OnAsrError?.Invoke(ex.Message);
         }
     }
 
@@ -124,7 +127,10 @@ public sealed class Orchestrator : IDisposable
             var follow = await AppServices.Llm.GenerateFollowUpsAsync(question, context, ct);
             OnFollowUps?.Invoke(follow);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            OnLlmError?.Invoke(ex.Message);
+        }
     }
 
     private async Task DebouncedGenerateAsync()
@@ -159,6 +165,8 @@ public sealed class Orchestrator : IDisposable
         var ctx = string.Empty;
         if (s.Keywords is { Length: > 0 }) ctx += "Keywords: " + string.Join(", ", s.Keywords) + "\n";
         if (!string.IsNullOrWhiteSpace(s.CompanyBlurb)) ctx += "Company: " + s.CompanyBlurb + "\n";
+        if (!string.IsNullOrWhiteSpace(s.ResumeText)) ctx += "Resume: " + s.ResumeText + "\n";
+        if (!string.IsNullOrWhiteSpace(s.JobDescText)) ctx += "JobDesc: " + s.JobDescText + "\n";
         return ctx;
     }
 

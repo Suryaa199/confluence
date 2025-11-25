@@ -25,6 +25,8 @@ public partial class SettingsWindow : Window
         var s = _settings.Load();
         ChunkSizeBox.Text = s.ChunkSizeMs.ToString();
         UseSilero.IsChecked = s.EnableSileroVad;
+        SileroWindowBox.Text = s.SileroWindowMs.ToString();
+        SileroThresholdBox.Text = s.SileroThreshold.ToString(System.Globalization.CultureInfo.InvariantCulture);
         KeywordsBox.Text = string.Join(", ", s.Keywords ?? Array.Empty<string>());
         CompanyBox.Text = s.CompanyBlurb ?? string.Empty;
         VadMinBox.Text = s.VadMinVoiceMs.ToString();
@@ -57,6 +59,8 @@ public partial class SettingsWindow : Window
         var s = _settings.Load();
         if (int.TryParse(ChunkSizeBox.Text, out var chunk)) s.ChunkSizeMs = Math.Clamp(chunk, 250, 2000);
         s.EnableSileroVad = UseSilero.IsChecked == true;
+        if (int.TryParse(SileroWindowBox.Text, out var sw)) s.SileroWindowMs = Math.Clamp(sw, 10, 100);
+        if (float.TryParse(SileroThresholdBox.Text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var th)) s.SileroThreshold = Math.Clamp(th, 0.05f, 0.95f);
         if (int.TryParse(VadMinBox.Text, out var vmin)) s.VadMinVoiceMs = Math.Clamp(vmin, 50, 2000);
         if (int.TryParse(VadMaxBox.Text, out var vmax)) s.VadMaxSilenceMs = Math.Clamp(vmax, 200, 3000);
         s.Keywords = (KeywordsBox.Text ?? string.Empty)
@@ -78,6 +82,8 @@ public partial class SettingsWindow : Window
         s.FasterWhisperUrl = FwUrlBox.Text ?? s.FasterWhisperUrl;
         s.FasterWhisperModel = FwModelBox.Text ?? s.FasterWhisperModel;
         _settings.Save(s);
+        // Reload VAD/TTS/clients so changes take effect next start
+        InterviewCopilot.Services.AppServices.ReloadAiClients();
         if (!string.IsNullOrWhiteSpace(ApiKeyBox.Password))
         {
             _secrets.SaveSecret("OpenAI:ApiKey", ApiKeyBox.Password.Trim());

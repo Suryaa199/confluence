@@ -8,7 +8,7 @@ public static class AppServices
     private static readonly ISecretStore SecretStore = new DpapiSecretStore();
 
     public static IAudioService Audio { get; } = new Audio.NaudioAudioService();
-    public static IVadService Vad { get; } = new Audio.VadEnergyGate();
+    public static IVadService Vad { get; private set; } = CreateVad();
 
     public static IAsrService Asr { get; private set; } = CreateAsr();
     public static ILlmService Llm { get; private set; } = CreateLlm();
@@ -59,11 +59,31 @@ public static class AppServices
         Llm = CreateLlm();
         Asr = CreateAsr();
         Tts = CreateTts();
+        Vad = CreateVad();
     }
 
     private static ITtsService CreateTts()
     {
         var s = LoadSettings();
         return new Tts.SapiTtsService(s.TtsUseCommunications);
+    }
+
+    private static IVadService CreateVad()
+    {
+        var s = LoadSettings();
+        if (s.EnableSileroVad)
+        {
+            var path = System.IO.Path.Combine(AppContext.BaseDirectory, "models", "silero_vad.onnx");
+            if (System.IO.File.Exists(path))
+            {
+                var vad = new Audio.SileroVadService();
+                vad.Configure(true, s.VadMinVoiceMs, s.VadMaxSilenceMs);
+                vad.SetParameters(s.SileroWindowMs, s.SileroThreshold);
+                return vad;
+            }
+        }
+        var def = new Audio.VadEnergyGate();
+        def.Configure(true, LoadSettings().VadMinVoiceMs, LoadSettings().VadMaxSilenceMs);
+        return def;
     }
 }
