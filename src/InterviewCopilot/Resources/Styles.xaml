@@ -9,9 +9,10 @@
     </Style>
 
     <!-- Dark theme for inputs -->
-    <SolidColorBrush x:Key="InputBg" Color="#2A2A2E"/>
-    <SolidColorBrush x:Key="InputBorder" Color="#3A3A3F"/>
-    <SolidColorBrush x:Key="InputFg" Color="#EEEEEE"/>
+    <!-- Increase contrast for better readability -->
+    <SolidColorBrush x:Key="InputBg" Color="#25262A"/>
+    <SolidColorBrush x:Key="InputBorder" Color="#5A5F66"/>
+    <SolidColorBrush x:Key="InputFg" Color="#FAFAFA"/>
 
     <!-- Default Button style consolidated; avoid duplicate default style definitions -->
 
@@ -68,8 +69,8 @@
     <!-- Compact button height -->
     <Style TargetType="Button">
         <Setter Property="Foreground" Value="#EFEFEF"/>
-        <Setter Property="Background" Value="#2A2A2E"/>
-        <Setter Property="BorderBrush" Value="#3A3A3F"/>
+        <Setter Property="Background" Value="#2D3036"/>
+        <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Padding" Value="10,6"/>
         <Setter Property="Margin" Value="6,0,0,0"/>
@@ -80,6 +81,46 @@
         <Setter Property="Background" Value="{StaticResource InputBg}"/>
         <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!-- Dark ListView + headers + row separators -->
+    <Style TargetType="ListView">
+        <Setter Property="Foreground" Value="{StaticResource InputFg}"/>
+        <Setter Property="Background" Value="{StaticResource InputBg}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource InputBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+        <Setter Property="AlternationCount" Value="2"/>
+        <Setter Property="ItemContainerStyle">
+            <Setter.Value>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="Foreground" Value="{StaticResource InputFg}"/>
+                    <Setter Property="Background" Value="#2A2A2E"/>
+                    <Setter Property="BorderBrush" Value="#3C3F44"/>
+                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                    <Style.Triggers>
+                        <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                            <Setter Property="Background" Value="#26292E"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#3A4048"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource Primary}"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="GridViewColumnHeader">
+        <Setter Property="Foreground" Value="#E0E0E0"/>
+        <Setter Property="Background" Value="#2A2A2E"/>
+        <Setter Property="BorderBrush" Value="#444444"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="6,4"/>
     </Style>
 
     <!-- Sidebar toggle style -->

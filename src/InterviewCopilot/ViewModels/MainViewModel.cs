@@ -139,15 +139,23 @@ public class MainViewModel : INotifyPropertyChanged
         SetView("interview");
         _flushTimer.Tick += (s, e) => FlushAnswerBuffer();
         SpeakAnswersEnabled = Services.AppServices.LoadSettings().SpeakAnswers;
+
+        // Initialize provider selectors from settings
+        var s = Services.AppServices.LoadSettings();
+        SelectedLlmProvider = string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase) ? "Ollama" : "OpenAI";
+        SelectedAsrProvider = string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase) ? "Local" : "OpenAI";
     }
 
     private void RefreshStatus()
     {
         var s = Services.AppServices.LoadSettings();
-        var isLocal = string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase) || string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase);
         var hasKey = Services.AppServices.HasOpenAiKey();
-        ApiStatus = isLocal ? "Local providers configured" : (hasKey ? "OpenAI key saved" : "OpenAI key missing");
-        OnboardingVisible = !isLocal && !hasKey;
+        var llmProv = string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase) ? "Ollama" : "OpenAI";
+        var asrProv = string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase) ? "Local" : "OpenAI";
+        var llmKeyPart = llmProv == "OpenAI" ? (hasKey ? "(key available)" : "(key missing)") : string.Empty;
+        var asrKeyPart = (asrProv == "OpenAI" && llmProv != "OpenAI") ? (hasKey ? "(key available)" : "(key missing)") : string.Empty;
+        ApiStatus = $"LLM: {llmProv} {llmKeyPart} | ASR: {asrProv} {asrKeyPart}".Trim();
+        OnboardingVisible = (llmProv == "OpenAI" || asrProv == "OpenAI") && !hasKey;
         var vad = Services.AppServices.Vad;
         var isSilero = vad?.GetType().Name?.Contains("Silero", StringComparison.OrdinalIgnoreCase) == true && vad.Enabled;
         VadStatus = isSilero ? "VAD: Silero" : "VAD: Energy";
@@ -219,6 +227,17 @@ public class MainViewModel : INotifyPropertyChanged
         };
         _lastOptions = options;
         await _orchestrator.StartAsync(options);
+
+        // Auto-open overlay when starting listening
+        App.Current.Dispatcher.Invoke(() =>
+        {
+            if (_overlay is null || !_overlay.IsVisible)
+            {
+                _overlay = new InterviewCopilot.Windows.OverlayWindow();
+                _overlay.Owner = System.Windows.Application.Current.MainWindow;
+                _overlay.Show();
+            }
+        });
     }
 
     private async void Stop()
@@ -360,6 +379,26 @@ public class MainViewModel : INotifyPropertyChanged
         SpeakAnswersEnabled = s.SpeakAnswers;
     }
 
+    private void ApplyLlmProvider(string provider)
+    {
+        var store = new Services.JsonSettingsStore();
+        var s = store.Load();
+        s.LlmProvider = provider;
+        store.Save(s);
+        Services.AppServices.ReloadAiClients();
+        RefreshStatus();
+    }
+
+    private void ApplyAsrProvider(string provider)
+    {
+        var store = new Services.JsonSettingsStore();
+        var s = store.Load();
+        s.AsrProvider = provider;
+        store.Save(s);
+        Services.AppServices.ReloadAiClients();
+        RefreshStatus();
+    }
+
     private static string BuildContextFromSettings()
     {
         var settings = Services.AppServices.LoadSettings();
@@ -480,6 +519,15 @@ public class MainViewModel : INotifyPropertyChanged
     private void LoadCheatSheet()
     {
         var s = Services.AppServices.LoadSettings();
+    // Provider selectors
+    public ObservableCollection<string> LlmProviders { get; } = new(new[] { "OpenAI", "Ollama" });
+    private string _selectedLlmProvider = "OpenAI";
+    public string SelectedLlmProvider { get => _selectedLlmProvider; set { if (_selectedLlmProvider != value) { _selectedLlmProvider = value; OnPropertyChanged(); ApplyLlmProvider(value); } } }
+
+    public ObservableCollection<string> AsrProviders { get; } = new(new[] { "OpenAI", "Local" });
+    private string _selectedAsrProvider = "OpenAI";
+    public string SelectedAsrProvider { get => _selectedAsrProvider; set { if (_selectedAsrProvider != value) { _selectedAsrProvider = value; OnPropertyChanged(); ApplyAsrProvider(value); } } }
+
         CheatSheetText = s.CheatSheet ?? string.Empty;
     }
 

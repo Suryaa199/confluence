@@ -24,6 +24,13 @@
                     <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
                 </StackPanel>
             </StackPanel>
+            <!-- Quick provider selectors -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="LLM:" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                <ComboBox Width="110" ItemsSource="{Binding LlmProviders}" SelectedItem="{Binding SelectedLlmProvider}"/>
+                <TextBlock Text="ASR:" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                <ComboBox Width="110" ItemsSource="{Binding AsrProviders}" SelectedItem="{Binding SelectedAsrProvider}"/>
+            </StackPanel>
             <ComboBox Width="120" ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}" ToolTip="Audio Source (PerApp/System/Microphone)"/>
             <ComboBox Width="220" ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name" ToolTip="Audio Endpoint (Default/Communications or specific device)"/>
             <ComboBox Width="150" ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}" ToolTip="Device Preference (Default vs Communications)"/>
@@ -35,16 +42,16 @@
                 <ComboBoxItem Content="Safe"/>
             </ComboBox>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
-                <TextBlock Text="Level" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBlock Text="Level" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#FFFFFF" FontWeight="SemiBold"/>
                 <ProgressBar Width="120" Height="12" Minimum="0" Maximum="1" Value="{Binding Level}"/>
                 <Rectangle Width="4" Height="12" Fill="{DynamicResource Primary}" Margin="6,0,0,0">
                     <Rectangle.LayoutTransform>
                         <ScaleTransform ScaleX="{Binding PeakLevel}"/>
                     </Rectangle.LayoutTransform>
                 </Rectangle>
-                <TextBlock Text="Endpoint:" Margin="12,0,0,0"/>
+                <TextBlock Text="Endpoint:" Margin="12,0,0,0" Foreground="#FFFFFF" FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding SelectedAudioEndpoint.Name}" ToolTip="{Binding SelectedAudioEndpoint.Name}"/>
-                <TextBlock Text=", Device:"/>
+                <TextBlock Text=", Device:" Foreground="#FFFFFF" FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding SelectedDevicePreference}"/>
                 <Button Content="Test Levels" Margin="8,0,0,0" Padding="10,4" Command="{Binding TestLevelsCommand}"/>
             </StackPanel>
@@ -92,6 +99,7 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="Transcript (question)" Style="{StaticResource Subtitle}"/>
                             <Button Content="Copy" Command="{Binding CopyTranscriptCommand}" Margin="8,0,0,0"/>
+                            <Button Content="{Binding ToggleCaptureLabel}" Style="{StaticResource PrimaryButton}" Command="{Binding ToggleCaptureCommand}" Margin="12,0,0,0"/>
                         </StackPanel>
                         <Grid Height="100">
                             <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1">

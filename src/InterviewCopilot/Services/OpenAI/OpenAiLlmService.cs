@@ -22,25 +22,25 @@ public sealed class OpenAiLlmService : ILlmService
 
     public async IAsyncEnumerable<string> StreamAnswerAsync(string question, string context, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
-        var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "v1/chat/completions");
-        req.Headers.Accept.Clear();
-        req.Headers.Accept.ParseAdd("text/event-stream");
-
-        var body = new
-        {
-            model = _model,
-            stream = true,
-            messages = new object[]
-            {
-                new { role = "system", content = "You are an interview copilot. Be concise, structured, and include key points, concrete examples, and CLI commands when relevant." },
-                new { role = "user", content = $"Context:\n{context}\n\nQuestion:\n{question}" }
-            }
-        };
-        req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-
         System.Net.Http.HttpResponseMessage res = null!;
         for (int attempt = 0; attempt < 3; attempt++)
         {
+            var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "v1/chat/completions");
+            req.Headers.Accept.Clear();
+            req.Headers.Accept.ParseAdd("text/event-stream");
+
+            var body = new
+            {
+                model = _model,
+                stream = true,
+                messages = new object[]
+                {
+                    new { role = "system", content = "You are an interview copilot. Be concise, structured, and include key points, concrete examples, and CLI commands when relevant." },
+                    new { role = "user", content = $"Context:\n{context}\n\nQuestion:\n{question}" }
+                }
+            };
+            req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
             res = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
             if ((int)res.StatusCode == 429 || (int)res.StatusCode >= 500)
             {
@@ -80,7 +80,6 @@ public sealed class OpenAiLlmService : ILlmService
 
     public async Task<IReadOnlyList<string>> GenerateFollowUpsAsync(string question, string context, CancellationToken ct)
     {
-        var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "v1/chat/completions");
         var prompt = "You are generating interview follow-up questions. Output strictly as JSON: {\"followups\":[\"...\"]}. 3-5 items, concise, no numbering, no commentary.";
         var jsonSchema = new
         {
@@ -96,21 +95,22 @@ public sealed class OpenAiLlmService : ILlmService
                 additionalProperties = false
             }
         };
-        var body = new
-        {
-            model = _model,
-            stream = false,
-            response_format = new { type = "json_schema", json_schema = jsonSchema },
-            messages = new object[]
-            {
-                new { role = "system", content = prompt },
-                new { role = "user", content = $"Context:\n{context}\n\nQuestion:\n{question}" }
-            }
-        };
-        req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         System.Net.Http.HttpResponseMessage res = null!;
         for (int attempt = 0; attempt < 3; attempt++)
         {
+            var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "v1/chat/completions");
+            var body = new
+            {
+                model = _model,
+                stream = false,
+                response_format = new { type = "json_schema", json_schema = jsonSchema },
+                messages = new object[]
+                {
+                    new { role = "system", content = prompt },
+                    new { role = "user", content = $"Context:\n{context}\n\nQuestion:\n{question}" }
+                }
+            };
+            req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
             res = await _http.SendAsync(req, ct);
             if ((int)res.StatusCode == 429 || (int)res.StatusCode >= 500)
             {

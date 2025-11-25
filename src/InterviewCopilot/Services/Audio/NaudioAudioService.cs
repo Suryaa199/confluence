@@ -116,8 +116,8 @@ public sealed class NaudioAudioService : IAudioService
     {
         if (!IsCapturing) return;
         // Convert to float mono and forward. This naïve downmix is a placeholder.
-        var cap = sender as IWaveIn;
-        var format = (cap as WasapiCapture)?.WaveFormat ?? (cap as WasapiLoopbackCapture)?.WaveFormat;
+        // WasapiCapture/WasapiLoopbackCapture don't always implement IWaveIn; use sender directly.
+        var format = (sender as WasapiCapture)?.WaveFormat ?? (sender as WasapiLoopbackCapture)?.WaveFormat;
         if (format is null) return;
         var samples = BytesToMonoFloat(e.Buffer, e.BytesRecorded, format);
         // Level meter (RMS)

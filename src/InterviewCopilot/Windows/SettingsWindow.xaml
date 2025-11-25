@@ -16,6 +16,8 @@
                 <TextBlock Text="OpenAI API Key" FontWeight="Bold"/>
                 <PasswordBox x:Name="ApiKeyBox" Tag="API Key"/>
 
+                <Border Height="1" Background="{StaticResource InputBorder}" Margin="0,12,0,12"/>
+
                 <TextBlock Text="Chunk Size (ms)" Margin="0,16,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="ChunkSizeBox" Text="750"/>
 
@@ -26,6 +28,8 @@
 
                 <TextBlock Text="Silero Threshold (0..1)" Margin="0,8,0,0"/>
                 <TextBox x:Name="SileroThresholdBox" Text="0.5"/>
+
+                <Border Height="1" Background="{StaticResource InputBorder}" Margin="0,12,0,12"/>
 
                 <TextBlock Text="VAD Min Voice (ms)" Margin="0,16,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="VadMinBox" Text="200"/>
@@ -62,6 +66,8 @@
                 <TextBlock Text="Faster-Whisper Model"/>
                 <TextBox x:Name="FwModelBox" Text="base"/>
 
+                <Border Height="1" Background="{StaticResource InputBorder}" Margin="0,12,0,12"/>
+
                 <TextBlock Text="Resume (txt)" Margin="0,16,0,0" FontWeight="Bold"/>
                 <StackPanel Orientation="Horizontal">
                     <Button Content="Load .txt" Click="OnLoadResume" Margin="0,0,8,0"/>
@@ -74,6 +80,8 @@
                     <TextBox x:Name="JdBox" AcceptsReturn="True" Height="100" Width="Auto"/>
                 </StackPanel>
 
+                <Border Height="1" Background="{StaticResource InputBorder}" Margin="0,12,0,12"/>
+
                 <TextBlock Text="Keywords" Margin="0,16,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="KeywordsBox" AcceptsReturn="True" Height="80"/>
 
@@ -83,6 +91,8 @@
                 <Button Content="Generate Cheat Sheet" Margin="0,16,0,0" Click="OnGenerateCheatSheet"/>
                 <TextBlock Text="Cheat Sheet" Margin="0,8,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="CheatBox" AcceptsReturn="True" Height="150"/>
+
+                <Border Height="1" Background="{StaticResource InputBorder}" Margin="0,12,0,12"/>
 
                 <TextBlock Text="Story Bank (search)" Margin="0,16,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="StorySearchBox"/>
