@@ -24,11 +24,16 @@
                     <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
                 </StackPanel>
             </StackPanel>
-            <ComboBox Width="140" ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}"/>
-            <ComboBox Width="180" ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name"/>
-            <ComboBox Width="150" ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}"/>
-            <ComboBox Width="140" ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}"/>
+            <ComboBox Width="120" ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}" ToolTip="Audio Source (PerApp/System/Microphone)"/>
+            <ComboBox Width="220" ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name" ToolTip="Audio Endpoint (Default/Communications or specific device)"/>
+            <ComboBox Width="150" ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}" ToolTip="Device Preference (Default vs Communications)"/>
+            <ComboBox Width="120" ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}" ToolTip="Session Hint (helps gating)"/>
             <Button Content="Per-App Picker" Command="{Binding OpenPerAppPickerCommand}"/>
+            <ComboBox Width="140" ToolTip="Presets for fast setup" SelectedItem="{Binding SelectedPreset}">
+                <ComboBoxItem Content="Cloud"/>
+                <ComboBoxItem Content="Local Low-Latency"/>
+                <ComboBoxItem Content="Safe"/>
+            </ComboBox>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                 <TextBlock Text="Level" VerticalAlignment="Center" Margin="0,0,6,0"/>
                 <ProgressBar Width="120" Height="12" Minimum="0" Maximum="1" Value="{Binding Level}"/>
@@ -38,7 +43,7 @@
                     </Rectangle.LayoutTransform>
                 </Rectangle>
                 <TextBlock Text="Endpoint:" Margin="12,0,0,0"/>
-                <TextBlock Text="{Binding SelectedAudioEndpoint.Name}"/>
+                <TextBlock Text="{Binding SelectedAudioEndpoint.Name}" ToolTip="{Binding SelectedAudioEndpoint.Name}"/>
                 <TextBlock Text=", Device:"/>
                 <TextBlock Text="{Binding SelectedDevicePreference}"/>
                 <Button Content="Test Levels" Margin="8,0,0,0" Padding="10,4" Command="{Binding TestLevelsCommand}"/>
@@ -86,9 +91,11 @@
                     <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,8">
                         <TextBlock Text="Transcript (question)" Style="{StaticResource Subtitle}"/>
                         <Grid Height="100">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <TextBlock Text="{Binding LiveQuestion}" TextWrapping="Wrap"/>
-                            </ScrollViewer>
+                            <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <TextBlock Text="{Binding LiveQuestion}" TextWrapping="Wrap"/>
+                                </ScrollViewer>
+                            </Border>
                             <TextBlock Text="Start Listening to populate transcript..." Foreground="#999" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
@@ -106,9 +113,11 @@
                     <StackPanel Grid.Row="1">
                         <TextBlock Text="Answer" Style="{StaticResource Subtitle}"/>
                         <Grid>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <TextBlock Text="{Binding LiveAnswer}" TextWrapping="Wrap"/>
-                            </ScrollViewer>
+                            <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <TextBlock Text="{Binding LiveAnswer}" TextWrapping="Wrap"/>
+                                </ScrollViewer>
+                            </Border>
                             <TextBlock Text="Answer will appear here..." Foreground="#999" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
@@ -133,9 +142,9 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="{DynamicResource ChipBg}" CornerRadius="4" Padding="6" Margin="4,4,0,0">
+                                    <Button Background="{DynamicResource ChipBg}" BorderThickness="0" Padding="6" Margin="4,4,0,0" Command="{Binding DataContext.TakeFollowUpCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}">
                                         <TextBlock Text="{Binding}"/>
-                                    </Border>
+                                    </Button>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -210,13 +219,13 @@
             <StatusBarItem>
                 <TextBlock>
                     <Run Text="ASR: "/>
-                    <Run Text="{Binding AsrStatus}"/>
+                    <Run Text="{Binding AsrStatus}" Foreground="{Binding AsrStatus, Converter={StaticResource StatusToBrush}}"/>
                 </TextBlock>
             </StatusBarItem>
             <StatusBarItem>
                 <TextBlock>
                     <Run Text="LLM: "/>
-                    <Run Text="{Binding LlmStatus}"/>
+                    <Run Text="{Binding LlmStatus}" Foreground="{Binding LlmStatus, Converter={StaticResource StatusToBrush}}"/>
                 </TextBlock>
             </StatusBarItem>
             <StatusBarItem>

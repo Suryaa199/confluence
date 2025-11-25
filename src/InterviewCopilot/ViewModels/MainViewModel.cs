@@ -4,6 +4,8 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text;
+using System.Windows.Threading;
 using InterviewCopilot.Services;
 
 namespace InterviewCopilot.ViewModels;
@@ -31,6 +33,8 @@ public class MainViewModel : INotifyPropertyChanged
     private double _peakLevel;
     private string _storyQuery = string.Empty;
     private int? _storyDaysFilter;
+    private readonly StringBuilder _answerBuffer = new();
+    private readonly DispatcherTimer _flushTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
 
     public string LiveQuestion { get => _liveQuestion; set { _liveQuestion = value; OnPropertyChanged(); } }
     public string LiveAnswer { get => _liveAnswer; set { _liveAnswer = value; OnPropertyChanged(); } }
@@ -88,6 +92,7 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand StorySearchCommand { get; }
     public ICommand SetFilterCommand { get; }
     public ICommand ClearFilterCommand { get; }
+    public ICommand TakeFollowUpCommand { get; }
     private string _openAiKeyInput = string.Empty;
     public ObservableCollection<string> StorySearchResults { get; } = new();
     public string CheatSheetText { get => _cheatSheetText; set { _cheatSheetText = value; OnPropertyChanged(); } }
@@ -113,9 +118,18 @@ public class MainViewModel : INotifyPropertyChanged
         StorySearchCommand = new RelayCommand(async _ => await StorySearchAsync());
         SetFilterCommand = new RelayCommand(async d => { if (d is string s && int.TryParse(s, out var days)) StoryDaysFilter = days; await StorySearchAsync(); });
         ClearFilterCommand = new RelayCommand(async _ => { StoryDaysFilter = null; await StorySearchAsync(); });
+        TakeFollowUpCommand = new RelayCommand(async p =>
+        {
+            if (p is string f && !string.IsNullOrWhiteSpace(f))
+            {
+                LiveQuestion = (LiveQuestion?.Length > 0 ? LiveQuestion + " " : string.Empty) + f;
+                await RegenerateAsync();
+            }
+        });
         RefreshEndpoints();
         RefreshStatus();
         SetView("interview");
+        _flushTimer.Tick += (s, e) => FlushAnswerBuffer();
     }
 
     private void RefreshStatus()
@@ -148,8 +162,11 @@ public class MainViewModel : INotifyPropertyChanged
         };
         _orchestrator.OnAnswerToken += tok =>
         {
-            LiveAnswer += tok;
-            _overlay?.SetAnswer(LiveAnswer);
+            lock (_answerBuffer)
+            {
+                _answerBuffer.Append(tok);
+            }
+            if (!_flushTimer.IsEnabled) _flushTimer.Start();
         };
         _orchestrator.OnFollowUps += list =>
         {
@@ -246,17 +263,77 @@ public class MainViewModel : INotifyPropertyChanged
         var ctx = BuildContextFromSettings();
         var q = string.IsNullOrWhiteSpace(LiveQuestion) ? "Give a concise summary of my strengths." : LiveQuestion;
         LiveAnswer = string.Empty;
+        lock (_answerBuffer) _answerBuffer.Clear();
         try
         {
             await foreach (var token in Services.AppServices.Llm.StreamAnswerAsync(q, ctx, CancellationToken.None))
             {
-                LiveAnswer += token;
+                lock (_answerBuffer) _answerBuffer.Append(token);
+                if (!_flushTimer.IsEnabled) _flushTimer.Start();
             }
         }
         catch (Exception ex)
         {
             LiveAnswer += $"\n[LLM error: {ex.Message}]";
         }
+    }
+
+    private void FlushAnswerBuffer()
+    {
+        string? toApply = null;
+        lock (_answerBuffer)
+        {
+            if (_answerBuffer.Length > 0)
+            {
+                toApply = _answerBuffer.ToString();
+                _answerBuffer.Clear();
+            }
+        }
+        if (toApply is null)
+        {
+            _flushTimer.Stop();
+            return;
+        }
+        LiveAnswer += toApply;
+        _overlay?.SetAnswer(LiveAnswer);
+    }
+
+    public ObservableCollection<string> Presets { get; } = new(new[] { "Cloud", "Local Low-Latency", "Safe" });
+    private string? _selectedPreset;
+    public string? SelectedPreset { get => _selectedPreset; set { _selectedPreset = value; OnPropertyChanged(); if (!string.IsNullOrEmpty(value)) ApplyPreset(value); } }
+
+    private void ApplyPreset(string preset)
+    {
+        var s = Services.AppServices.LoadSettings();
+        switch (preset)
+        {
+            case "Cloud":
+                s.LlmProvider = "OpenAI";
+                s.AsrProvider = "OpenAI";
+                s.ChunkSizeMs = 750;
+                s.EnableSileroVad = false;
+                break;
+            case "Local Low-Latency":
+                s.LlmProvider = "Ollama";
+                s.AsrProvider = "Local";
+                s.ChunkSizeMs = 500;
+                s.EnableSileroVad = true;
+                s.SileroWindowMs = 30;
+                s.SileroThreshold = 0.55f;
+                s.TtsUseCommunications = true;
+                break;
+            case "Safe":
+                s.LlmProvider = "OpenAI";
+                s.AsrProvider = "OpenAI";
+                s.ChunkSizeMs = 1000;
+                s.EnableSileroVad = true;
+                s.SileroWindowMs = 40;
+                s.SileroThreshold = 0.6f;
+                break;
+        }
+        new Services.JsonSettingsStore().Save(s);
+        Services.AppServices.ReloadAiClients();
+        RefreshStatus();
     }
 
     private static string BuildContextFromSettings()
