@@ -38,8 +38,18 @@ public sealed class OpenAiLlmService : ILlmService
         };
         req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 
-        using var res = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-        res.EnsureSuccessStatusCode();
+        System.Net.Http.HttpResponseMessage res = null!;
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            res = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+            if ((int)res.StatusCode == 429 || (int)res.StatusCode >= 500)
+            {
+                await Task.Delay(300 * (int)Math.Pow(2, attempt), ct);
+                continue;
+            }
+            res.EnsureSuccessStatusCode();
+            break;
+        }
         using var stream = await res.Content.ReadAsStreamAsync(ct);
         using var reader = new System.IO.StreamReader(stream);
         string? line;
@@ -98,8 +108,18 @@ public sealed class OpenAiLlmService : ILlmService
             }
         };
         req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-        using var res = await _http.SendAsync(req, ct);
-        res.EnsureSuccessStatusCode();
+        System.Net.Http.HttpResponseMessage res = null!;
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            res = await _http.SendAsync(req, ct);
+            if ((int)res.StatusCode == 429 || (int)res.StatusCode >= 500)
+            {
+                await Task.Delay(300 * (int)Math.Pow(2, attempt), ct);
+                continue;
+            }
+            res.EnsureSuccessStatusCode();
+            break;
+        }
         var json = await res.Content.ReadAsStringAsync(ct);
         try
         {

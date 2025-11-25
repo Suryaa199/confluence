@@ -89,7 +89,10 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,8">
-                        <TextBlock Text="Transcript (question)" Style="{StaticResource Subtitle}"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Transcript (question)" Style="{StaticResource Subtitle}"/>
+                            <Button Content="Copy" Command="{Binding CopyTranscriptCommand}" Margin="8,0,0,0"/>
+                        </StackPanel>
                         <Grid Height="100">
                             <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -111,7 +114,11 @@
                         </Grid>
                     </StackPanel>
                     <StackPanel Grid.Row="1">
-                        <TextBlock Text="Answer" Style="{StaticResource Subtitle}"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Answer" Style="{StaticResource Subtitle}"/>
+                            <ProgressBar Width="60" Height="6" Margin="8,0,0,0" IsIndeterminate="True" Visibility="{Binding IsAnswerStreaming, Converter={StaticResource BoolToVis}}"/>
+                            <Button Content="Mute TTS" Command="{Binding ToggleSpeakAnswersCommand}" Margin="8,0,0,0"/>
+                        </StackPanel>
                         <Grid>
                             <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">

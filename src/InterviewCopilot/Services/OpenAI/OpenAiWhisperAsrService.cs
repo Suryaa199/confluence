@@ -16,24 +16,30 @@ public sealed class OpenAiWhisperAsrService : IAsrService
 
     public async Task<string> TranscribeChunkAsync(byte[] wavBytes, CancellationToken ct)
     {
-        using var content = new System.Net.Http.MultipartFormDataContent();
-        var file = new System.Net.Http.ByteArrayContent(wavBytes);
-        file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/wav");
-        content.Add(file, "file", "chunk.wav");
-        content.Add(new System.Net.Http.StringContent(Model), "model");
-        using var res = await _http.PostAsync("v1/audio/transcriptions", content, ct);
-        res.EnsureSuccessStatusCode();
-        var json = await res.Content.ReadAsStringAsync(ct);
-        // Response shape: { text: "..." }
-        try
+        for (int attempt = 0; attempt < 3; attempt++)
         {
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("text", out var t))
+            using var content = new System.Net.Http.MultipartFormDataContent();
+            var file = new System.Net.Http.ByteArrayContent(wavBytes);
+            file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/wav");
+            content.Add(file, "file", "chunk.wav");
+            content.Add(new System.Net.Http.StringContent(Model), "model");
+            using var res = await _http.PostAsync("v1/audio/transcriptions", content, ct);
+            if ((int)res.StatusCode == 429 || (int)res.StatusCode >= 500)
             {
-                return t.GetString() ?? string.Empty;
+                await Task.Delay(300 * (int)Math.Pow(2, attempt), ct);
+                continue;
             }
+            res.EnsureSuccessStatusCode();
+            var json = await res.Content.ReadAsStringAsync(ct);
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("text", out var t))
+                    return t.GetString() ?? string.Empty;
+            }
+            catch { }
+            return string.Empty;
         }
-        catch { }
         return string.Empty;
     }
 }

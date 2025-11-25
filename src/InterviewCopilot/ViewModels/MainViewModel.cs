@@ -35,6 +35,8 @@ public class MainViewModel : INotifyPropertyChanged
     private int? _storyDaysFilter;
     private readonly StringBuilder _answerBuffer = new();
     private readonly DispatcherTimer _flushTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+    private bool _isAnswerStreaming;
+    private bool _speakAnswersEnabled;
 
     public string LiveQuestion { get => _liveQuestion; set { _liveQuestion = value; OnPropertyChanged(); } }
     public string LiveAnswer { get => _liveAnswer; set { _liveAnswer = value; OnPropertyChanged(); } }
@@ -70,6 +72,8 @@ public class MainViewModel : INotifyPropertyChanged
     public double PeakLevel { get => _peakLevel; set { _peakLevel = value; OnPropertyChanged(); } }
     public string StoryQuery { get => _storyQuery; set { _storyQuery = value; OnPropertyChanged(); } }
     public int? StoryDaysFilter { get => _storyDaysFilter; set { _storyDaysFilter = value; OnPropertyChanged(); } }
+    public bool IsAnswerStreaming { get => _isAnswerStreaming; set { _isAnswerStreaming = value; OnPropertyChanged(); } }
+    public bool SpeakAnswersEnabled { get => _speakAnswersEnabled; set { _speakAnswersEnabled = value; OnPropertyChanged(); } }
 
     public ObservableCollection<DeviceItem> AudioEndpoints { get; } = new();
     private DeviceItem? _selectedAudioEndpoint;
@@ -93,6 +97,8 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand SetFilterCommand { get; }
     public ICommand ClearFilterCommand { get; }
     public ICommand TakeFollowUpCommand { get; }
+    public ICommand CopyTranscriptCommand { get; }
+    public ICommand ToggleSpeakAnswersCommand { get; }
     private string _openAiKeyInput = string.Empty;
     public ObservableCollection<string> StorySearchResults { get; } = new();
     public string CheatSheetText { get => _cheatSheetText; set { _cheatSheetText = value; OnPropertyChanged(); } }
@@ -126,10 +132,13 @@ public class MainViewModel : INotifyPropertyChanged
                 await RegenerateAsync();
             }
         });
+        CopyTranscriptCommand = new RelayCommand(_ => { try { System.Windows.Clipboard.SetText(LiveQuestion ?? string.Empty); } catch { } });
+        ToggleSpeakAnswersCommand = new RelayCommand(_ => ToggleSpeakAnswers());
         RefreshEndpoints();
         RefreshStatus();
         SetView("interview");
         _flushTimer.Tick += (s, e) => FlushAnswerBuffer();
+        SpeakAnswersEnabled = Services.AppServices.LoadSettings().SpeakAnswers;
     }
 
     private void RefreshStatus()
@@ -167,6 +176,7 @@ public class MainViewModel : INotifyPropertyChanged
                 _answerBuffer.Append(tok);
             }
             if (!_flushTimer.IsEnabled) _flushTimer.Start();
+            IsAnswerStreaming = true;
         };
         _orchestrator.OnFollowUps += list =>
         {
@@ -181,6 +191,7 @@ public class MainViewModel : INotifyPropertyChanged
                 {
                     _ = Services.AppServices.Tts.SpeakAsync(LiveAnswer, CancellationToken.None);
                 }
+                IsAnswerStreaming = false;
             });
         };
         _orchestrator.OnAsrError += msg => AsrStatus = "Error: " + msg;
@@ -264,6 +275,7 @@ public class MainViewModel : INotifyPropertyChanged
         var q = string.IsNullOrWhiteSpace(LiveQuestion) ? "Give a concise summary of my strengths." : LiveQuestion;
         LiveAnswer = string.Empty;
         lock (_answerBuffer) _answerBuffer.Clear();
+        IsAnswerStreaming = true;
         try
         {
             await foreach (var token in Services.AppServices.Llm.StreamAnswerAsync(q, ctx, CancellationToken.None))
@@ -271,10 +283,12 @@ public class MainViewModel : INotifyPropertyChanged
                 lock (_answerBuffer) _answerBuffer.Append(token);
                 if (!_flushTimer.IsEnabled) _flushTimer.Start();
             }
+            IsAnswerStreaming = false;
         }
         catch (Exception ex)
         {
             LiveAnswer += $"\n[LLM error: {ex.Message}]";
+            IsAnswerStreaming = false;
         }
     }
 
@@ -334,6 +348,16 @@ public class MainViewModel : INotifyPropertyChanged
         new Services.JsonSettingsStore().Save(s);
         Services.AppServices.ReloadAiClients();
         RefreshStatus();
+        SpeakAnswersEnabled = Services.AppServices.LoadSettings().SpeakAnswers;
+    }
+
+    private void ToggleSpeakAnswers()
+    {
+        var store = new Services.JsonSettingsStore();
+        var s = store.Load();
+        s.SpeakAnswers = !s.SpeakAnswers;
+        store.Save(s);
+        SpeakAnswersEnabled = s.SpeakAnswers;
     }
 
     private static string BuildContextFromSettings()
