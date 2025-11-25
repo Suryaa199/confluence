@@ -29,7 +29,7 @@
             <ComboBox Width="150" ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}" ToolTip="Device Preference (Default vs Communications)"/>
             <ComboBox Width="120" ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}" ToolTip="Session Hint (helps gating)"/>
             <Button Content="Per-App Picker" Command="{Binding OpenPerAppPickerCommand}"/>
-            <ComboBox Width="140" ToolTip="Presets for fast setup" SelectedItem="{Binding SelectedPreset}">
+            <ComboBox Width="140" ToolTip="Presets for fast setup" SelectedValuePath="Content" SelectedValue="{Binding SelectedPreset}">
                 <ComboBoxItem Content="Cloud"/>
                 <ComboBoxItem Content="Local Low-Latency"/>
                 <ComboBoxItem Content="Safe"/>

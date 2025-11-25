@@ -3,10 +3,9 @@ Interview Copilot (Windows/desktop) [![CI (Windows build)](https://github.com/Su
 UI (Parakeet AI style and add scroll when ever it requireds  ) always-on-top Windows assistant for live interviews. Captures meeting audio (per-app/System/Mic), transcribes with OpenAI Whisper, and streams answers token-by-token using GPT-4o/4o-mini. Answers include key points, concrete examples, and CLI commands. Includes follow-up predictor, company cheat sheet, keywords, and offline ASR buffer.
 
 Quick Start
-- Requirements: Windows 10/11, .NET 8 SDK, OpenAI API key.
-- Models: Uses OpenAI Whisper (Transcriptions) and GPT-4o/4o-mini.
-- Build: Open with Visual Studio 2022 or `dotnet build`.
-- Package: Add NAudio package before first run: `dotnet add src/InterviewCopilot package NAudio`.
+- Requirements: Windows 10/11, .NET 8 SDK, OpenAI API key (or local providers).
+- Models: Uses OpenAI Whisper (Transcriptions) and GPT-4o/4o-mini. Optional local: Faster‑Whisper + Ollama.
+- Build: Open with Visual Studio 2022 or build from CLI.
 
 Features (MVP)
 - Per-app/System/Microphone audio capture selector.
@@ -27,30 +26,30 @@ Enhancements
 
 Repo Structure
 - `src/InterviewCopilot/` WPF app (.NET 8, UseWPF)
-  - Shell: `App.xaml`, `MainWindow`
-  - Pages: `SettingsPage`, `InterviewPage`, `Windows/OverlayWindow`
-  - ViewModels: `Main`, `Settings`, `Interview`, `Overlay`
+  - Shell: `App.xaml`, `MainWindow`, `MainViewModel`
+  - Windows: `Windows/OverlayWindow`, `Windows/SettingsWindow`, `Windows/PerAppPickerWindow`
+  - Pages: `SettingsPage`, `InterviewPage` (auxiliary)
   - Services
     - Abstractions: `ISettingsStore`, `ISecretStore`, `IAudioService`, `IAsrService`, `ILlmService`, `ICoachingService`, `IStoryRepository`, `IOfflineSpooler`, `ITtsService`, `IVadService`
-    - Implementations: placeholders (`Noop*`), `JsonSettingsStore`, `DpapiSecretStore`
+    - Audio: `NaudioAudioService`, `Resampler`, `VadEnergyGate`, `SileroVadService`
+    - OpenAI: `OpenAiLlmService`, `OpenAiWhisperAsrService`
+    - Local: `OllamaLlmService`, `LocalAsrService`
+    - Storage: `JsonSettingsStore`, `DpapiSecretStore`, `FileStoryRepository`, `DiskOfflineSpooler`
   - Resources: `Colors.xaml`, `Typography.xaml`, `Styles.xaml`
-  - Models: `Settings`, `Chip`, `CoachingState`
+  - Models: `Settings`, `CoachingState`
 
 Setup
-1) Set `OPENAI_API_KEY` in your user environment.
+1) Set `OPENAI_API_KEY` in your user environment (if using OpenAI).
 2) Build and run:
-   - Visual Studio: open `InterviewCopilot.sln`, restore packages, run.
-   - CLI: `dotnet add src/InterviewCopilot package NAudio && dotnet restore && dotnet build && dotnet run --project src/InterviewCopilot`
-3) API key in app: On the Settings page, paste your OpenAI key and click “Test Key” → “Save Key”. The key is stored encrypted (Windows DPAPI, user scope). Leave the box empty to use the saved key or the `OPENAI_API_KEY` environment variable.
-4) Package (Windows): `powershell -ExecutionPolicy Bypass -File scripts/publish-win.ps1`
-   - Output in `dist/win-x64/InterviewCopilot.exe`
-5) Optional MSIX (Windows SDK): `powershell -ExecutionPolicy Bypass -File scripts/make-msix.ps1 -Publisher "CN=Your Name"`
-   - Produces `dist/InterviewCopilot.msix`. Sign with your code-signing cert.
-3) On first run, open Settings page:
-   - Upload resume/JD as text or paste text (PDF/DOCX support can be added later).
-   - Enter keywords and optional company blurb, then click “Generate Cheat Sheet”.
-   - Choose Audio Source: Per‑app (window picker), System (loopback), or Microphone.
-   - Click Start Capture to open the Interview page.
+   - Visual Studio: open `InterviewCopilot.sln`, restore, run.
+   - CLI: `dotnet restore && dotnet build && dotnet run --project src/InterviewCopilot`
+3) API key in app: On Settings, paste your OpenAI key and click “Test Key” → “Save Key”. The key is stored encrypted (Windows DPAPI, user scope). If empty, the app uses `OPENAI_API_KEY` when present.
+4) Package (Windows): `powershell -ExecutionPolicy Bypass -File scripts/publish-win.ps1` → `dist/win-x64/InterviewCopilot.exe`
+5) Optional MSIX (Windows SDK): `powershell -ExecutionPolicy Bypass -File scripts/make-msix.ps1 -Publisher "CN=Your Name"` → `dist/InterviewCopilot.msix`
+6) First run tips:
+   - Paste resume/JD text or load .txt/.docx; add keywords and optional company blurb; click “Generate Cheat Sheet”.
+   - Choose Audio Source: Per‑app (picker), System (loopback), or Microphone.
+   - Click Start Listening to begin.
 
 Notes
 - Streaming uses OpenAI Chat Completions with `stream=true`.
