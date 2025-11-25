@@ -31,7 +31,6 @@
             </ListView>
             <TextBlock x:Name="EmptyText" Text="No audio sessions detected. Play audio in the selected device and click Refresh." Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"/>
         </Grid>
-        </ListView>
         <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button Content="Use" Click="OnUse"/>
             <Button Content="Close" Margin="8,0,0,0" Click="OnClose"/>
