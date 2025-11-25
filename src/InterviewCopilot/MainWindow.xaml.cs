@@ -14,18 +14,22 @@ public partial class MainWindow : Window
         DataContext = new MainViewModel();
         try
         {
-            var asm = System.Reflection.Assembly.GetExecutingAssembly();
-            var path = asm.Location;
-            var t = File.GetLastWriteTime(path);
+            string baseDir = AppContext.BaseDirectory;
+            string exe = System.IO.Path.Combine(baseDir, "InterviewCopilot.exe");
+            string path = File.Exists(exe) ? exe : (System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? exe);
+            var t = File.Exists(path) ? File.GetLastWriteTime(path) : DateTime.Now;
             string shortHash = "";
             try
             {
                 using var sha = SHA256.Create();
-                using var fs = File.OpenRead(path);
-                var hash = sha.ComputeHash(fs);
-                var sb = new StringBuilder();
-                for (int i = 0; i < 4; i++) sb.Append(hash[i].ToString("x2"));
-                shortHash = sb.ToString();
+                if (File.Exists(path))
+                {
+                    using var fs = File.OpenRead(path);
+                    var hash = sha.ComputeHash(fs);
+                    var sb = new StringBuilder();
+                    for (int i = 0; i < 4; i++) sb.Append(hash[i].ToString("x2"));
+                    shortHash = sb.ToString();
+                }
             }
             catch { }
             this.Title = string.IsNullOrEmpty(shortHash)

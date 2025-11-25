@@ -168,6 +168,9 @@
             <StatusBarItem>
                 <TextBlock Text="LLM: {Binding LlmStatus}"/>
             </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="{Binding VadStatus}"/>
+            </StatusBarItem>
         </StatusBar>
     </Grid>
 

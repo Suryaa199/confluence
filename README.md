@@ -74,14 +74,27 @@ Per-App Best Practices
 Windows 11 Per-Window Capture
 - A per-window audio capture path is experimental and feature-detected. The app automatically falls back to session-gated loopback when unsupported. In practice, PerApp + Communications device isolation yields reliable results.
 
-Silero VAD Model
-- Download `silero_vad.onnx` and place it at `models/silero_vad.onnx` (create the folder next to the EXE).
-- Script (example):
-  `powershell -Command "New-Item -ItemType Directory -Force models; Invoke-WebRequest -Uri https://github.com/snakers4/silero-vad/raw/master/files/silero_vad.onnx -OutFile models/silero_vad.onnx"`
-  If the URL changes, consult the Silero VAD repo for the latest ONNX model.
+ Silero VAD Setup
+ - Download `silero_vad.onnx` and place it at `models/silero_vad.onnx` (create the folder next to the EXE).
+ - Example script:
+   `powershell -Command "New-Item -ItemType Directory -Force models; Invoke-WebRequest -Uri https://github.com/snakers4/silero-vad/raw/master/files/silero_vad.onnx -OutFile models/silero_vad.onnx"`
+ - Enable Silero in Settings → “Enable Silero VAD”, then set:
+   - Window: 30 ms (common default; try 20–40 ms)
+   - Threshold: 0.50–0.60 (speech probability)
+ - Tips:
+   - Increase Threshold if you get false positives (background noise).
+   - Decrease Threshold if speech is clipped too often.
+   - Silero uses small incremental windows; larger windows increase stability but may add latency.
 
 Roadmap
 - Voice output, per-company prompt presets, improved PDF/DOCX parsing, story bank, rubric-based scoring view.
  - Investigate Windows 11 GraphicsCapture + MediaCapture for tighter per-window audio when supported (with fallback).
 UI Scrolling
 - Settings and coaching/answer panes are wrapped in scroll containers so options remain visible on smaller screens.
+
+Low-Latency Tips
+- Use Local providers: Faster‑Whisper (ASR) and Ollama (LLM) on a capable GPU.
+- Reduce `Chunk Size (ms)` in Settings (e.g., 400–600 ms) to send smaller ASR chunks.
+- Keep Silero Window moderate (20–40 ms); increase slightly if you hear choppy boundaries.
+- Keep Threshold ~0.50–0.60 initially; tune higher if noisy environments cause false triggers.
+- PerApp capture: set your meeting app to output to the Communications device and select that in the app for isolation.

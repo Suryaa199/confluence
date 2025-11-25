@@ -21,6 +21,7 @@ public class MainViewModel : INotifyPropertyChanged
     private Services.AudioOptions? _lastOptions;
     private bool _onboardingVisible;
     private string _apiStatus = "Unknown";
+    private string _vadStatus = string.Empty;
     private bool _isCapturing;
     private bool _isInterviewView;
     private bool _isCheatView;
@@ -55,6 +56,7 @@ public class MainViewModel : INotifyPropertyChanged
     public double Level { get => _level; set { _level = value; OnPropertyChanged(); } }
     public bool OnboardingVisible { get => _onboardingVisible; set { _onboardingVisible = value; OnPropertyChanged(); } }
     public string ApiStatus { get => _apiStatus; set { _apiStatus = value; OnPropertyChanged(); } }
+    public string VadStatus { get => _vadStatus; set { _vadStatus = value; OnPropertyChanged(); } }
     public bool IsCapturing { get => _isCapturing; set { _isCapturing = value; OnPropertyChanged(); OnPropertyChanged(nameof(ToggleCaptureLabel)); } }
     public string ToggleCaptureLabel => IsCapturing ? "Stop Listening" : "Start Listening";
     public bool IsInterviewView { get => _isInterviewView; set { _isInterviewView = value; OnPropertyChanged(); } }
@@ -123,6 +125,9 @@ public class MainViewModel : INotifyPropertyChanged
         var hasKey = Services.AppServices.HasOpenAiKey();
         ApiStatus = isLocal ? "Local providers configured" : (hasKey ? "OpenAI key saved" : "OpenAI key missing");
         OnboardingVisible = !isLocal && !hasKey;
+        var vad = Services.AppServices.Vad;
+        var isSilero = vad?.GetType().Name?.Contains("Silero", StringComparison.OrdinalIgnoreCase) == true && vad.Enabled;
+        VadStatus = isSilero ? "VAD: Silero" : "VAD: Energy";
     }
 
     private async void Start()
