@@ -38,6 +38,8 @@ public sealed class OllamaLlmService : ILlmService
             ct.ThrowIfCancellationRequested();
             if (string.IsNullOrWhiteSpace(line)) continue;
             if (!line.StartsWith("{")) continue; // ollama streams json objects per line
+            string? tokenToYield = null;
+            bool doneFlag = false;
             try
             {
                 using var doc = JsonDocument.Parse(line);
@@ -45,11 +47,13 @@ public sealed class OllamaLlmService : ILlmService
                 if (root.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var content))
                 {
                     var t = content.GetString();
-                    if (!string.IsNullOrEmpty(t)) yield return t;
+                    if (!string.IsNullOrEmpty(t)) tokenToYield = t;
                 }
-                if (root.TryGetProperty("done", out var done) && done.GetBoolean()) yield break;
+                if (root.TryGetProperty("done", out var done) && done.GetBoolean()) doneFlag = true;
             }
             catch { }
+            if (!string.IsNullOrEmpty(tokenToYield)) yield return tokenToYield;
+            if (doneFlag) yield break;
         }
     }
 
@@ -86,4 +90,3 @@ public sealed class OllamaLlmService : ILlmService
         return Array.Empty<string>();
     }
 }
-

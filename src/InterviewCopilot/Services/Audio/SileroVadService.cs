@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
@@ -39,7 +43,9 @@ public sealed class SileroVadService : IVadService, IDisposable
             var path = Path.Combine(AppContext.BaseDirectory, "models", "silero_vad.onnx");
             if (File.Exists(path))
             {
-                _session = new InferenceSession(path, new SessionOptions());
+                var so = new SessionOptions();
+                var pre = new PrePackedWeightsContainer();
+                _session = new InferenceSession(path, so, pre);
                 // probe input/output names
                 foreach (var kv in _session.InputMetadata)
                 {
