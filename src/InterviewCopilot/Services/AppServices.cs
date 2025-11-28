@@ -2,6 +2,13 @@ using InterviewCopilot.Models;
 
 namespace InterviewCopilot.Services;
 
+public enum OpenAiKeySource
+{
+    None,
+    Stored,
+    Environment
+}
+
 public static class AppServices
 {
     private static readonly ISettingsStore SettingsStore = new JsonSettingsStore();
@@ -18,10 +25,16 @@ public static class AppServices
 
     public static Settings LoadSettings() => SettingsStore.Load();
 
-    public static bool HasOpenAiKey()
+    public static bool HasOpenAiKey() => GetOpenAiKeySource() != OpenAiKeySource.None;
+
+    public static bool HasStoredOpenAiKey()
+        => SecretStore is DpapiSecretStore dpapi && dpapi.HasStoredSecret("OpenAI:ApiKey");
+
+    public static OpenAiKeySource GetOpenAiKeySource()
     {
-        var key = SecretStore.GetSecret("OpenAI:ApiKey");
-        return !string.IsNullOrWhiteSpace(key);
+        var env = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        if (!string.IsNullOrWhiteSpace(env)) return OpenAiKeySource.Environment;
+        return HasStoredOpenAiKey() ? OpenAiKeySource.Stored : OpenAiKeySource.None;
     }
 
     public static Orchestrator CreateOrchestrator()

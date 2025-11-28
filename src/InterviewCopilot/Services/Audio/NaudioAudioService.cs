@@ -15,6 +15,8 @@ public sealed class NaudioAudioService : IAudioService
     private Services.AudioOptions? _options;
     private volatile bool _sessionActive;
     private volatile bool _hasMatchingSessions;
+    private DateTime _lastSessionActivity = DateTime.MinValue;
+    private const int SessionTailMs = 750;
     public bool IsCapturing { get; private set; }
     public event Action<AudioFrame>? OnFrame;
     public event Action<double>? OnLevel;
@@ -25,6 +27,7 @@ public sealed class NaudioAudioService : IAudioService
         {
             if (IsCapturing) return Task.CompletedTask;
             _options = options;
+            _lastSessionActivity = DateTime.MinValue;
             switch (options.Source)
             {
                 case AudioSourceKind.System:
@@ -125,10 +128,19 @@ public sealed class NaudioAudioService : IAudioService
         for (int i = 0; i < samples.Length; i++) { var v = samples[i]; sum += v * v; }
         double rms = Math.Sqrt(sum / Math.Max(1, samples.Length));
         OnLevel?.Invoke(Math.Min(1.0, rms * 4));
-        // Session gating for loopback when a matching session is present
-        if ((_options?.Source == AudioSourceKind.System || _options?.Source == AudioSourceKind.PerApp) && _hasMatchingSessions)
+        // Session gating (PerApp only) while still allowing short post-activity tails
+        if (_options?.Source == AudioSourceKind.PerApp)
         {
-            if (!_sessionActive) return;
+            if (!_hasMatchingSessions)
+            {
+                return;
+            }
+            var tailActive = _lastSessionActivity != DateTime.MinValue &&
+                (DateTime.UtcNow - _lastSessionActivity).TotalMilliseconds <= SessionTailMs;
+            if (!_sessionActive && !tailActive)
+            {
+                return;
+            }
         }
         OnFrame?.Invoke(new AudioFrame { Samples = samples, SampleRate = format.SampleRate });
     }
@@ -273,7 +285,15 @@ public sealed class NaudioAudioService : IAudioService
             }
         }
         _hasMatchingSessions = hasMatch;
-        _sessionActive = active;
+        if (active)
+        {
+            _lastSessionActivity = DateTime.UtcNow;
+            _sessionActive = true;
+        }
+        else
+        {
+            _sessionActive = false;
+        }
     }
 
     private static bool IsHintMatch(string proc, SessionHint hint)

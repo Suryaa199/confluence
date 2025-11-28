@@ -4,7 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Interview Copilot" Height="720" Width="1100"
+        Title="Interview Copilot" Height="720" Width="1100" MinWidth="900" MinHeight="640"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
         Topmost="True" WindowStartupLocation="CenterScreen">
     <Grid Background="{DynamicResource Surface}">
         <Grid.RowDefinitions>
@@ -14,51 +15,82 @@
         </Grid.RowDefinitions>
 
         <!-- Top bar -->
-        <DockPanel Grid.Row="0" Background="{DynamicResource SurfaceLow}" LastChildFill="False">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Interview Copilot" Style="{StaticResource Title}" Margin="0,0,12,0"/>
-                <TextBlock Text=" | " Margin="4,0"/>
-                <TextBlock Text="{Binding ApiStatus}" VerticalAlignment="Center"/>
-                <StackPanel Orientation="Horizontal" Margin="12,0,0,0" Visibility="{Binding OnboardingVisible, Converter={StaticResource BoolToVis}}">
-                    <TextBox Width="220" Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}"/>
-                    <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
+        <Border Grid.Row="0" Background="{DynamicResource SurfaceLow}" Padding="8">
+            <StackPanel>
+                <DockPanel LastChildFill="True">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
+                        <TextBlock Text="Interview Copilot" Style="{StaticResource Title}" Margin="0,0,12,0"/>
+                        <TextBlock Text=" | " Margin="4,0"/>
+                        <TextBlock Text="{Binding ApiStatus}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Right">
+                        <TextBox Width="220" Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}" ToolTip="Paste your OpenAI API key"/>
+                        <Button Content="{Binding TestKeyLabel}" Command="{Binding TestKeyCommand}" IsEnabled="{Binding IsTestingKey, Converter={StaticResource InverseBool}}"/>
+                        <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
+                    </StackPanel>
+                </DockPanel>
+                <TextBlock Text="{Binding KeyStatusMessage}" Margin="0,4,0,0" Foreground="{DynamicResource Primary}" TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding OnboardingVisible, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="OpenAI key missing. Enter it above to enable streaming answers."/>
                 </StackPanel>
+                <ScrollViewer Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
+                    <WrapPanel>
+                        <StackPanel Width="170" Margin="0,0,12,12">
+                            <TextBlock Text="Provider Mode" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding ProviderProfiles}" SelectedItem="{Binding SelectedProviderProfile}"/>
+                        </StackPanel>
+                        <StackPanel Width="150" Margin="0,0,12,12">
+                            <TextBlock Text="LLM Provider" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding LlmProviders}" SelectedItem="{Binding SelectedLlmProvider}"/>
+                        </StackPanel>
+                        <StackPanel Width="150" Margin="0,0,12,12">
+                            <TextBlock Text="ASR Provider" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding AsrProviders}" SelectedItem="{Binding SelectedAsrProvider}"/>
+                        </StackPanel>
+                        <StackPanel Width="160" Margin="0,0,12,12">
+                            <TextBlock Text="Quick Preset" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox SelectedValuePath="Content" SelectedValue="{Binding SelectedPreset}">
+                                <ComboBoxItem Content="Cloud"/>
+                                <ComboBoxItem Content="Local Low-Latency"/>
+                                <ComboBoxItem Content="Safe"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Width="150" Margin="0,0,12,12">
+                            <TextBlock Text="Audio Source" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}" ToolTip="Audio Source (PerApp/System/Microphone)"/>
+                        </StackPanel>
+                        <StackPanel Width="230" Margin="0,0,12,12">
+                            <TextBlock Text="Audio Endpoint" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name" ToolTip="Audio Endpoint (Default/Communications or specific device)"/>
+                        </StackPanel>
+                        <StackPanel Width="150" Margin="0,0,12,12">
+                            <TextBlock Text="Device Preference" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}" ToolTip="Device Preference (Default vs Communications)"/>
+                        </StackPanel>
+                        <StackPanel Width="150" Margin="0,0,12,12">
+                            <TextBlock Text="Session Hint" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}" ToolTip="Helps prioritize the meeting app process"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Audio Meter" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ProgressBar Width="140" Height="12" Minimum="0" Maximum="1" Value="{Binding Level}"/>
+                                <Rectangle Width="4" Height="12" Fill="{DynamicResource Primary}" Margin="6,0,0,0">
+                                    <Rectangle.LayoutTransform>
+                                        <ScaleTransform ScaleX="{Binding PeakLevel}"/>
+                                    </Rectangle.LayoutTransform>
+                                </Rectangle>
+                            </StackPanel>
+                            <Button Content="Test Levels" Command="{Binding TestLevelsCommand}" Margin="0,6,0,0"/>
+                        </StackPanel>
+                        <Button Content="Per-App Picker" Command="{Binding OpenPerAppPickerCommand}" Margin="0,0,12,12"/>
+                        <Button Content="Overlay" Command="{Binding ToggleOverlayCommand}" Margin="0,0,12,12"/>
+                        <Button Content="Settings" Command="{Binding OpenSettingsCommand}" Margin="0,0,12,12"/>
+                        <Button Content="{Binding ToggleCaptureLabel}" Style="{StaticResource PrimaryButton}" Command="{Binding ToggleCaptureCommand}" Margin="0,0,12,12"/>
+                    </WrapPanel>
+                </ScrollViewer>
             </StackPanel>
-            <!-- Quick provider selectors -->
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="LLM:" VerticalAlignment="Center" Margin="8,0,4,0"/>
-                <ComboBox Width="110" ItemsSource="{Binding LlmProviders}" SelectedItem="{Binding SelectedLlmProvider}"/>
-                <TextBlock Text="ASR:" VerticalAlignment="Center" Margin="8,0,4,0"/>
-                <ComboBox Width="110" ItemsSource="{Binding AsrProviders}" SelectedItem="{Binding SelectedAsrProvider}"/>
-            </StackPanel>
-            <ComboBox Width="120" ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}" ToolTip="Audio Source (PerApp/System/Microphone)"/>
-            <ComboBox Width="220" ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name" ToolTip="Audio Endpoint (Default/Communications or specific device)"/>
-            <ComboBox Width="150" ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}" ToolTip="Device Preference (Default vs Communications)"/>
-            <ComboBox Width="120" ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}" ToolTip="Session Hint (helps gating)"/>
-            <Button Content="Per-App Picker" Command="{Binding OpenPerAppPickerCommand}"/>
-            <ComboBox Width="140" ToolTip="Presets for fast setup" SelectedValuePath="Content" SelectedValue="{Binding SelectedPreset}">
-                <ComboBoxItem Content="Cloud"/>
-                <ComboBoxItem Content="Local Low-Latency"/>
-                <ComboBoxItem Content="Safe"/>
-            </ComboBox>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
-                <TextBlock Text="Level" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#FFFFFF" FontWeight="SemiBold"/>
-                <ProgressBar Width="120" Height="12" Minimum="0" Maximum="1" Value="{Binding Level}"/>
-                <Rectangle Width="4" Height="12" Fill="{DynamicResource Primary}" Margin="6,0,0,0">
-                    <Rectangle.LayoutTransform>
-                        <ScaleTransform ScaleX="{Binding PeakLevel}"/>
-                    </Rectangle.LayoutTransform>
-                </Rectangle>
-                <TextBlock Text="Endpoint:" Margin="12,0,0,0" Foreground="#FFFFFF" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding SelectedAudioEndpoint.Name}" ToolTip="{Binding SelectedAudioEndpoint.Name}"/>
-                <TextBlock Text=", Device:" Foreground="#FFFFFF" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding SelectedDevicePreference}"/>
-                <Button Content="Test Levels" Margin="8,0,0,0" Padding="10,4" Command="{Binding TestLevelsCommand}"/>
-            </StackPanel>
-            <Button Content="{Binding ToggleCaptureLabel}" Style="{StaticResource PrimaryButton}" Command="{Binding ToggleCaptureCommand}"/>
-            <Button Content="Overlay" Margin="4,0" Padding="12,4" Command="{Binding ToggleOverlayCommand}"/>
-            <Button Content="Settings" Margin="4,0" Padding="12,4" Command="{Binding OpenSettingsCommand}"/>
-        </DockPanel>
+        </Border>
 
         <!-- Center content -->
         <Grid Grid.Row="1" Margin="12">

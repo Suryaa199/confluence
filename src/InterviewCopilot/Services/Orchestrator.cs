@@ -14,6 +14,7 @@ public sealed class Orchestrator : IDisposable
 
     private CancellationTokenSource? _cts;
     private readonly List<float> _currentBuffer = new();
+    private readonly object _bufferLock = new();
     private DateTime _lastSpeech = DateTime.MinValue;
     private const int TargetRate = 16000;
     private readonly object _lock = new();
@@ -62,23 +63,34 @@ public sealed class Orchestrator : IDisposable
             var mono16k = frame.SampleRate == TargetRate
                 ? frame.Samples
                 : Resampler.ToSampleRate(frame.Samples, frame.SampleRate, TargetRate);
+            var now = DateTime.UtcNow;
+            var minChunkSamples = TargetRate * _settings.ChunkSizeMs / 1000;
+            float[]? samplesToFlush = null;
+            var hasSpeech = _vad.IsSpeech(mono16k);
 
-            if (!_vad.IsSpeech(mono16k))
+            lock (_bufferLock)
             {
-                // If enough buffered and we hit silence, flush
-                if (_currentBuffer.Count >= (TargetRate * _settings.ChunkSizeMs / 1000))
+                if (hasSpeech)
                 {
-                    await FlushChunkAsync();
+                    _currentBuffer.AddRange(mono16k);
+                    _lastSpeech = now;
+                    if (_currentBuffer.Count >= minChunkSamples)
+                    {
+                        samplesToFlush = _currentBuffer.ToArray();
+                        _currentBuffer.Clear();
+                    }
                 }
-                return;
+                else if (_currentBuffer.Count >= minChunkSamples ||
+                    (_currentBuffer.Count > 0 && (now - _lastSpeech).TotalMilliseconds >= _settings.VadMaxSilenceMs))
+                {
+                    samplesToFlush = _currentBuffer.ToArray();
+                    _currentBuffer.Clear();
+                }
             }
 
-            _lastSpeech = DateTime.UtcNow;
-            _currentBuffer.AddRange(mono16k);
-            var minChunkSamples = TargetRate * _settings.ChunkSizeMs / 1000;
-            if (_currentBuffer.Count >= minChunkSamples)
+            if (samplesToFlush is not null)
             {
-                await FlushChunkAsync();
+                await FlushChunkAsync(samplesToFlush);
             }
         }
         catch
@@ -87,11 +99,8 @@ public sealed class Orchestrator : IDisposable
         }
     }
 
-    private async Task FlushChunkAsync()
+    private async Task FlushChunkAsync(float[] samples)
     {
-        if (_currentBuffer.Count == 0) return;
-        var samples = _currentBuffer.ToArray();
-        _currentBuffer.Clear();
         var wav = WavEncoder.EncodePcm16kMono(samples);
         try
         {

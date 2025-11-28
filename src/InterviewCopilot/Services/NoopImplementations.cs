@@ -144,4 +144,17 @@ public sealed class DpapiSecretStore : ISecretStore
         catch { }
         return new();
     }
+
+    public bool HasStoredSecret(string name)
+    {
+        try
+        {
+            var dict = LoadAll();
+            return dict.ContainsKey(name);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

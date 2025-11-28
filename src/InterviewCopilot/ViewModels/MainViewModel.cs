@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Windows.Threading;
 using InterviewCopilot.Services;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace InterviewCopilot.ViewModels;
 
@@ -37,6 +39,11 @@ public class MainViewModel : INotifyPropertyChanged
     private readonly DispatcherTimer _flushTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
     private bool _isAnswerStreaming;
     private bool _speakAnswersEnabled;
+    private readonly HttpClient _httpClient = new();
+    private bool _isTestingKey;
+    private string _keyStatusMessage = "OpenAI key not saved.";
+    private string _selectedProviderProfile = "OpenAI Only";
+    private bool _suppressProviderProfileSync;
 
     public string LiveQuestion { get => _liveQuestion; set { _liveQuestion = value; OnPropertyChanged(); } }
     public string LiveAnswer { get => _liveAnswer; set { _liveAnswer = value; OnPropertyChanged(); } }
@@ -74,15 +81,18 @@ public class MainViewModel : INotifyPropertyChanged
     public int? StoryDaysFilter { get => _storyDaysFilter; set { _storyDaysFilter = value; OnPropertyChanged(); } }
     public bool IsAnswerStreaming { get => _isAnswerStreaming; set { _isAnswerStreaming = value; OnPropertyChanged(); } }
     public bool SpeakAnswersEnabled { get => _speakAnswersEnabled; set { _speakAnswersEnabled = value; OnPropertyChanged(); } }
+    public bool IsTestingKey { get => _isTestingKey; set { _isTestingKey = value; OnPropertyChanged(); OnPropertyChanged(nameof(TestKeyLabel)); } }
+    public string TestKeyLabel => IsTestingKey ? "Testing..." : "Test Key";
+    public string KeyStatusMessage { get => _keyStatusMessage; set { _keyStatusMessage = value; OnPropertyChanged(); } }
 
     // Provider selectors
     public ObservableCollection<string> LlmProviders { get; } = new(new[] { "OpenAI", "Ollama" });
     private string _selectedLlmProvider = "OpenAI";
-    public string SelectedLlmProvider { get => _selectedLlmProvider; set { if (_selectedLlmProvider != value) { _selectedLlmProvider = value; OnPropertyChanged(); ApplyLlmProvider(value); } } }
+    public string SelectedLlmProvider { get => _selectedLlmProvider; set { if (_selectedLlmProvider != value) { _selectedLlmProvider = value; OnPropertyChanged(); ApplyLlmProvider(value); UpdateProviderProfileFromSelections(); } } }
 
     public ObservableCollection<string> AsrProviders { get; } = new(new[] { "OpenAI", "Local" });
     private string _selectedAsrProvider = "OpenAI";
-    public string SelectedAsrProvider { get => _selectedAsrProvider; set { if (_selectedAsrProvider != value) { _selectedAsrProvider = value; OnPropertyChanged(); ApplyAsrProvider(value); } } }
+    public string SelectedAsrProvider { get => _selectedAsrProvider; set { if (_selectedAsrProvider != value) { _selectedAsrProvider = value; OnPropertyChanged(); ApplyAsrProvider(value); UpdateProviderProfileFromSelections(); } } }
 
     public ObservableCollection<DeviceItem> AudioEndpoints { get; } = new();
     private DeviceItem? _selectedAudioEndpoint;
@@ -108,10 +118,13 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand TakeFollowUpCommand { get; }
     public ICommand CopyTranscriptCommand { get; }
     public ICommand ToggleSpeakAnswersCommand { get; }
+    public ICommand TestKeyCommand { get; }
     private string _openAiKeyInput = string.Empty;
     public ObservableCollection<string> StorySearchResults { get; } = new();
     public string CheatSheetText { get => _cheatSheetText; set { _cheatSheetText = value; OnPropertyChanged(); } }
     public string OpenAiKeyInput { get => _openAiKeyInput; set { _openAiKeyInput = value; OnPropertyChanged(); } }
+    public ObservableCollection<string> ProviderProfiles { get; } = new(new[] { "OpenAI Only", "Local Only", "Hybrid (Local LLM + OpenAI ASR)", "Hybrid (OpenAI LLM + Local ASR)", "Custom" });
+    public string SelectedProviderProfile { get => _selectedProviderProfile; set { if (_selectedProviderProfile != value) { _selectedProviderProfile = value; OnPropertyChanged(); ApplyProviderProfile(value); } } }
 
     public MainViewModel()
     {
@@ -143,6 +156,7 @@ public class MainViewModel : INotifyPropertyChanged
         });
         CopyTranscriptCommand = new RelayCommand(_ => { try { System.Windows.Clipboard.SetText(LiveQuestion ?? string.Empty); } catch { } });
         ToggleSpeakAnswersCommand = new RelayCommand(_ => ToggleSpeakAnswers());
+        TestKeyCommand = new RelayCommand(async _ => await TestKeyAsync());
         RefreshEndpoints();
         RefreshStatus();
         SetView("interview");
@@ -153,6 +167,7 @@ public class MainViewModel : INotifyPropertyChanged
         var s = Services.AppServices.LoadSettings();
         SelectedLlmProvider = string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase) ? "Ollama" : "OpenAI";
         SelectedAsrProvider = string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase) ? "Local" : "OpenAI";
+        UpdateProviderProfileFromSelections();
     }
 
     private void RefreshStatus()
@@ -168,6 +183,7 @@ public class MainViewModel : INotifyPropertyChanged
         var vad = Services.AppServices.Vad;
         var isSilero = vad?.GetType().Name?.Contains("Silero", StringComparison.OrdinalIgnoreCase) == true && vad.Enabled;
         VadStatus = isSilero ? "VAD: Silero" : "VAD: Energy";
+        RefreshKeyStatus();
     }
 
     private async void Start()
@@ -257,6 +273,7 @@ public class MainViewModel : INotifyPropertyChanged
         if (_orchestrator is not null)
         {
             await _orchestrator.StopAsync();
+            _orchestrator.Dispose();
             _orchestrator = null;
         }
         IsCapturing = false;
@@ -377,6 +394,7 @@ public class MainViewModel : INotifyPropertyChanged
         Services.AppServices.ReloadAiClients();
         RefreshStatus();
         SpeakAnswersEnabled = Services.AppServices.LoadSettings().SpeakAnswers;
+        UpdateProviderProfileFromSelections();
     }
 
     private void ToggleSpeakAnswers()
@@ -511,6 +529,7 @@ public class MainViewModel : INotifyPropertyChanged
             secrets.SaveSecret("OpenAI:ApiKey", key);
             OpenAiKeyInput = string.Empty;
             RefreshStatus();
+            KeyStatusMessage = "Key saved securely for this device.";
         }
         catch { }
     }
@@ -544,8 +563,98 @@ public class MainViewModel : INotifyPropertyChanged
         {
             var snippet = it.Answer.Length > 80 ? it.Answer.Substring(0, 80) + "..." : it.Answer;
             StorySearchResults.Add($"{it.At:u} | {it.Question} -> {snippet}");
+    }
+
+    private void RefreshKeyStatus()
+    {
+        var source = Services.AppServices.GetOpenAiKeySource();
+        KeyStatusMessage = source switch
+        {
+            Services.OpenAiKeySource.Environment => "Using OPENAI_API_KEY from system environment (read-only).",
+            Services.OpenAiKeySource.Stored => "API key securely stored for this profile.",
+            _ => "No OpenAI key saved. Enter one to enable cloud providers."
+        };
+    }
+
+    private async Task TestKeyAsync()
+    {
+        if (IsTestingKey) return;
+        var key = (OpenAiKeyInput ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            KeyStatusMessage = "Enter a key above before testing.";
+            return;
+        }
+        IsTestingKey = true;
+        KeyStatusMessage = "Testing key...";
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.openai.com/v1/models");
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+            var res = await _httpClient.SendAsync(req);
+            if (res.IsSuccessStatusCode)
+            {
+                KeyStatusMessage = "Key looks valid. Click Save to store it.";
+            }
+            else
+            {
+                KeyStatusMessage = $"Key test failed: {(int)res.StatusCode} {res.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            KeyStatusMessage = "Key test error: " + ex.Message;
+        }
+        finally
+        {
+            IsTestingKey = false;
         }
     }
+
+    private void ApplyProviderProfile(string profile)
+    {
+        if (string.IsNullOrEmpty(profile) || profile.Equals("Custom", StringComparison.OrdinalIgnoreCase)) return;
+        _suppressProviderProfileSync = true;
+        switch (profile)
+        {
+            case "OpenAI Only":
+                SelectedLlmProvider = "OpenAI";
+                SelectedAsrProvider = "OpenAI";
+                break;
+            case "Local Only":
+                SelectedLlmProvider = "Ollama";
+                SelectedAsrProvider = "Local";
+                break;
+            case "Hybrid (Local LLM + OpenAI ASR)":
+                SelectedLlmProvider = "Ollama";
+                SelectedAsrProvider = "OpenAI";
+                break;
+            case "Hybrid (OpenAI LLM + Local ASR)":
+                SelectedLlmProvider = "OpenAI";
+                SelectedAsrProvider = "Local";
+                break;
+        }
+        _suppressProviderProfileSync = false;
+    }
+
+    private void UpdateProviderProfileFromSelections()
+    {
+        if (_suppressProviderProfileSync) return;
+        var profile = (_selectedLlmProvider, _selectedAsrProvider) switch
+        {
+            ("OpenAI", "OpenAI") => "OpenAI Only",
+            ("Ollama", "Local") => "Local Only",
+            ("Ollama", "OpenAI") => "Hybrid (Local LLM + OpenAI ASR)",
+            ("OpenAI", "Local") => "Hybrid (OpenAI LLM + Local ASR)",
+            _ => "Custom"
+        };
+        if (_selectedProviderProfile != profile)
+        {
+            _selectedProviderProfile = profile;
+            OnPropertyChanged(nameof(SelectedProviderProfile));
+        }
+    }
+}
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? name = null)
