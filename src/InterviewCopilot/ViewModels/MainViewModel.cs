@@ -563,6 +563,7 @@ public class MainViewModel : INotifyPropertyChanged
         {
             var snippet = it.Answer.Length > 80 ? it.Answer.Substring(0, 80) + "..." : it.Answer;
             StorySearchResults.Add($"{it.At:u} | {it.Question} -> {snippet}");
+        }
     }
 
     private void RefreshKeyStatus()
@@ -654,7 +655,6 @@ public class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(SelectedProviderProfile));
         }
     }
-}
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? name = null)
