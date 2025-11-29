@@ -28,7 +28,8 @@ public partial class PerAppPickerWindow : Window
             var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
             foreach (var device in devices)
             {
-                var sessions = device.AudioSessionManager?.Sessions;
+                var sessionManager = device.AudioSessionManager2 ?? device.AudioSessionManager;
+                var sessions = sessionManager?.Sessions;
                 if (sessions == null) continue;
                 for (int i = 0; i < sessions.Count; i++)
                 {
@@ -37,14 +38,25 @@ public partial class PerAppPickerWindow : Window
                     string title = string.Empty;
                     try
                     {
-                        var pi = session.GetType().GetProperty("Process");
-                        if (pi != null)
+                        int pid = 0;
+                        if (session is AudioSessionControl2 session2)
                         {
-                            if (pi.GetValue(session) is Process p)
-                            {
-                                proc = p.ProcessName ?? string.Empty;
-                                try { title = p.MainWindowTitle ?? string.Empty; } catch { }
-                            }
+                            pid = session2.ProcessID;
+                        }
+                        else
+                        {
+                            var pidProp = session.GetType().GetProperty("ProcessID");
+                            if (pidProp?.GetValue(session) is int value) pid = value;
+                        }
+                        if (pid > 0)
+                        {
+                            using var p = Process.GetProcessById(pid);
+                            proc = p.ProcessName ?? string.Empty;
+                            try { title = p.MainWindowTitle ?? string.Empty; } catch { }
+                        }
+                        if (string.IsNullOrWhiteSpace(proc))
+                        {
+                            proc = session.DisplayName ?? "(System)";
                         }
                     }
                     catch { }
