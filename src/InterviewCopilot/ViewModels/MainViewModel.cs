@@ -425,7 +425,7 @@ public class MainViewModel : INotifyPropertyChanged
         var s = store.Load();
         var hasKey = Services.AppServices.HasOpenAiKey();
         s.LlmProvider = hasKey ? "OpenAI" : "Ollama";
-        s.AsrProvider = "Local"; // local ASR keeps latency low regardless of cloud availability
+        s.AsrProvider = hasKey ? "OpenAI" : "Local"; // fall back to local only when no cloud key is available
         s.ChunkSizeMs = 450;
         s.EnableSileroVad = true;
         s.SileroWindowMs = 25;

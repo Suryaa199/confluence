@@ -23,6 +23,7 @@ public sealed class OpenAiWhisperAsrService : IAsrService
             file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/wav");
             content.Add(file, "file", "chunk.wav");
             content.Add(new System.Net.Http.StringContent(Model), "model");
+            content.Add(new System.Net.Http.StringContent("en"), "language");
             using var res = await _http.PostAsync("v1/audio/transcriptions", content, ct);
             if ((int)res.StatusCode == 429 || (int)res.StatusCode >= 500)
             {

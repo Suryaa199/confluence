@@ -8,7 +8,7 @@
         <StackPanel>
             <TextBlock Text="Answer (overlay)" FontWeight="Bold"/>
             <ScrollViewer x:Name="AnswerScroll"
-                          VerticalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Visible"
                           HorizontalScrollBarVisibility="Disabled"
                           Margin="0,4,0,0">
                 <TextBlock x:Name="AnswerText" TextWrapping="Wrap"/>

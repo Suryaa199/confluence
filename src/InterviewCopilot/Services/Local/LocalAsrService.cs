@@ -19,6 +19,7 @@ public sealed class LocalAsrService : IAsrService
         file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/wav");
         content.Add(file, "file", "chunk.wav");
         content.Add(new System.Net.Http.StringContent(_model), "model");
+        content.Add(new System.Net.Http.StringContent("en"), "language");
         using var res = await _http.PostAsync("transcribe", content, ct);
         res.EnsureSuccessStatusCode();
         var json = await res.Content.ReadAsStringAsync(ct);
@@ -31,4 +32,3 @@ public sealed class LocalAsrService : IAsrService
         return string.Empty;
     }
 }
-
