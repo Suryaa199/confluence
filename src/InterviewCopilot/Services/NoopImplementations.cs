@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -59,15 +60,40 @@ public sealed class DefaultCoachingService : ICoachingService
     private readonly ILlmService _llm;
     public DefaultCoachingService(ILlmService llm) { _llm = llm; }
 
-    public async Task<(string Answer, IReadOnlyList<string> FollowUps)> GenerateAsync(string question, string? cheatSheet, CancellationToken ct)
+    public async Task GenerateAsync(
+        string question,
+        string? cheatSheet,
+        Action<string>? onAnswerToken,
+        Action<IReadOnlyList<string>>? onFollowUps,
+        CancellationToken ct)
     {
-        var sb = new StringBuilder();
-        await foreach (var token in _llm.StreamAnswerAsync(question, cheatSheet ?? string.Empty, ct))
+        var context = cheatSheet ?? string.Empty;
+        try
         {
-            sb.Append(token);
+            await foreach (var token in _llm.StreamAnswerAsync(question, context, ct))
+            {
+                onAnswerToken?.Invoke(token);
+            }
         }
-        var follow = new List<string> { "Can you share a concrete example?", "What metrics improved?" };
-        return (sb.ToString(), follow);
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Failed to stream coaching answer.", ex);
+        }
+
+        IReadOnlyList<string> followUps = Array.Empty<string>();
+        try
+        {
+            followUps = await _llm.GenerateFollowUpsAsync(question, context, ct);
+        }
+        catch
+        {
+            // If follow-up generation fails, surface empty list so UX can continue.
+        }
+        onFollowUps?.Invoke(followUps);
     }
 }
 

@@ -19,7 +19,7 @@ public static class AppServices
 
     public static IAsrService Asr { get; private set; } = CreateAsr();
     public static ILlmService Llm { get; private set; } = CreateLlm();
-    public static ICoachingService Coaching { get; } = new DefaultCoachingService(Llm);
+    public static ICoachingService Coaching { get; private set; } = new DefaultCoachingService(Llm);
     public static IStoryRepository Stories { get; } = new FileStoryRepository();
     public static ITtsService Tts { get; private set; } = CreateTts();
 
@@ -73,6 +73,7 @@ public static class AppServices
         Asr = CreateAsr();
         Tts = CreateTts();
         Vad = CreateVad();
+        Coaching = new DefaultCoachingService(Llm);
     }
 
     private static ITtsService CreateTts()

@@ -132,12 +132,12 @@ public sealed class Orchestrator : IDisposable
     {
         try
         {
-            await foreach (var token in AppServices.Llm.StreamAnswerAsync(question, context, ct))
-            {
-                OnAnswerToken?.Invoke(token);
-            }
-            var follow = await AppServices.Llm.GenerateFollowUpsAsync(question, context, ct);
-            OnFollowUps?.Invoke(follow);
+            await _coach.GenerateAsync(
+                question,
+                context,
+                token => OnAnswerToken?.Invoke(token),
+                followUps => OnFollowUps?.Invoke(followUps),
+                ct);
         }
         catch (Exception ex)
         {

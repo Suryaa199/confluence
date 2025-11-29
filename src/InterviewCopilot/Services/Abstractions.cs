@@ -58,7 +58,12 @@ public interface ILlmService
 
 public interface ICoachingService
 {
-    Task<(string Answer, IReadOnlyList<string> FollowUps)> GenerateAsync(string question, string? cheatSheet, CancellationToken ct);
+    Task GenerateAsync(
+        string question,
+        string? cheatSheet,
+        Action<string>? onAnswerToken,
+        Action<IReadOnlyList<string>>? onFollowUps,
+        CancellationToken ct);
 }
 
 public interface ITtsService

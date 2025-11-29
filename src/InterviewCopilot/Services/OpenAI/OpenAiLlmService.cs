@@ -50,6 +50,15 @@ public sealed class OpenAiLlmService : ILlmService
             res.EnsureSuccessStatusCode();
             break;
         }
+        if (res is null)
+        {
+            throw new HttpRequestException("OpenAI response was not received.");
+        }
+        if (!res.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"OpenAI request failed after retries: {(int)res.StatusCode} {res.ReasonPhrase}");
+        }
+
         using var stream = await res.Content.ReadAsStreamAsync(ct);
         using var reader = new System.IO.StreamReader(stream);
         string? line;
@@ -120,6 +129,15 @@ public sealed class OpenAiLlmService : ILlmService
             res.EnsureSuccessStatusCode();
             break;
         }
+        if (res is null)
+        {
+            throw new HttpRequestException("OpenAI response was not received.");
+        }
+        if (!res.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"OpenAI request failed after retries: {(int)res.StatusCode} {res.ReasonPhrase}");
+        }
+
         var json = await res.Content.ReadAsStringAsync(ct);
         try
         {
