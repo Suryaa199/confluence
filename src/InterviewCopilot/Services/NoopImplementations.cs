@@ -81,7 +81,7 @@ public sealed class DefaultCoachingService : ICoachingService
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException("Failed to stream coaching answer.", ex);
+            throw new InvalidOperationException($"Failed to stream coaching answer: {ex.Message}", ex);
         }
 
         IReadOnlyList<string> followUps = Array.Empty<string>();

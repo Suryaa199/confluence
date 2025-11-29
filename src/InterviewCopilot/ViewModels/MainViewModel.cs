@@ -190,6 +190,16 @@ public class MainViewModel : INotifyPropertyChanged
 
     private async void Start()
     {
+        if ((string.Equals(SelectedLlmProvider, "OpenAI", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(SelectedAsrProvider, "OpenAI", StringComparison.OrdinalIgnoreCase)) &&
+            !Services.AppServices.HasOpenAiKey())
+        {
+            KeyStatusMessage = "OpenAI providers require a saved API key. Enter it above and click Save Key.";
+            OnboardingVisible = true;
+            LlmStatus = "Error: API key missing";
+            AsrStatus = "Error: API key missing";
+            return;
+        }
         RefreshStatus();
         AudioStatus = "Capturing";
         AsrStatus = "Listening";
@@ -437,6 +447,11 @@ public class MainViewModel : INotifyPropertyChanged
         Services.AppServices.ReloadAiClients();
         SpeakAnswersEnabled = s.SpeakAnswers;
         RefreshStatus();
+        if (!hasKey)
+        {
+            KeyStatusMessage = "Auto profile uses OpenAI when available. Save an API key or configure Local providers.";
+            OnboardingVisible = true;
+        }
 
         var previousSync = _suppressProviderProfileSync;
         _suppressProviderProfileSync = true;

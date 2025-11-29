@@ -10,8 +10,12 @@
             <ScrollViewer x:Name="AnswerScroll"
                           VerticalScrollBarVisibility="Visible"
                           HorizontalScrollBarVisibility="Disabled"
-                          Margin="0,4,0,0">
-                <TextBlock x:Name="AnswerText" TextWrapping="Wrap"/>
+                          Margin="0,4,0,0"
+                          Height="220"
+                          Background="#1A1A1A"
+                          BorderBrush="#444"
+                          BorderThickness="1">
+                <TextBlock x:Name="AnswerText" TextWrapping="Wrap" Margin="4"/>
             </ScrollViewer>
         </StackPanel>
     </Border>

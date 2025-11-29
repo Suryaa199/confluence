@@ -105,7 +105,7 @@ public sealed class Orchestrator : IDisposable
         try
         {
             var text = await _asr.TranscribeChunkAsync(wav, _cts?.Token ?? CancellationToken.None);
-            HandleTranscript(text);
+            HandleTranscript(FilterToEnglish(text));
         }
         catch (Exception ex)
         {
@@ -185,7 +185,7 @@ public sealed class Orchestrator : IDisposable
     private async Task ProcessSpoolChunkAsync(byte[] wavBytes, CancellationToken ct)
     {
         var text = await _asr.TranscribeChunkAsync(wavBytes, ct);
-        HandleTranscript(text);
+        HandleTranscript(FilterToEnglish(text));
     }
 
     public void Dispose()
@@ -193,5 +193,19 @@ public sealed class Orchestrator : IDisposable
         _audio.OnFrame -= HandleFrame;
         _cts?.Cancel();
         _cts?.Dispose();
+    }
+
+    private static string FilterToEnglish(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        var sb = new System.Text.StringBuilder(input.Length);
+        foreach (var ch in input)
+        {
+            if (ch <= 0x7F || char.IsWhiteSpace(ch) || char.IsPunctuation(ch))
+            {
+                sb.Append(ch);
+            }
+        }
+        return sb.ToString();
     }
 }
