@@ -28,8 +28,7 @@ public partial class PerAppPickerWindow : Window
             var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
             foreach (var device in devices)
             {
-                var sessionManager = device.AudioSessionManager2 ?? device.AudioSessionManager;
-                var sessions = sessionManager?.Sessions;
+                var sessions = device.AudioSessionManager?.Sessions;
                 if (sessions == null) continue;
                 for (int i = 0; i < sessions.Count; i++)
                 {
@@ -39,15 +38,8 @@ public partial class PerAppPickerWindow : Window
                     try
                     {
                         int pid = 0;
-                        if (session is AudioSessionControl2 session2)
-                        {
-                            pid = session2.ProcessID;
-                        }
-                        else
-                        {
-                            var pidProp = session.GetType().GetProperty("ProcessID");
-                            if (pidProp?.GetValue(session) is int value) pid = value;
-                        }
+                        var pidProp = session.GetType().GetProperty("ProcessID");
+                        if (pidProp?.GetValue(session) is int value) pid = value;
                         if (pid > 0)
                         {
                             using var p = Process.GetProcessById(pid);
