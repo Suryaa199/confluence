@@ -16,23 +16,30 @@
         </StackPanel>
         <Grid Grid.Row="1">
             <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1" CornerRadius="4">
-            <ListView x:Name="List" SelectionMode="Single">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn Header="Process" DisplayMemberBinding="{Binding ProcessName}" Width="180"/>
-                        <GridViewColumn Header="Title" DisplayMemberBinding="{Binding WindowTitle}" Width="220"/>
-                        <GridViewColumn Header="Level" Width="60">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding Level}" Height="12"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
+                <ListView x:Name="List" SelectionMode="Single">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Device" DisplayMemberBinding="{Binding DeviceName}" Width="160"/>
+                            <GridViewColumn Header="Process" DisplayMemberBinding="{Binding ProcessName}" Width="150"/>
+                            <GridViewColumn Header="Title" DisplayMemberBinding="{Binding WindowTitle}" Width="220"/>
+                            <GridViewColumn Header="Level" Width="60">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding Level}" Height="12"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
             </Border>
-            <TextBlock x:Name="EmptyText" Text="No audio sessions detected. Play audio in the selected device and click Refresh." Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            <TextBlock x:Name="EmptyText"
+                       Text="No active sessions detected on any output device. Play audio on the device you plan to capture (Communications/System) and click Refresh."
+                       Visibility="Collapsed"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="12"/>
         </Grid>
         <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button Content="Use" Click="OnUse"/>

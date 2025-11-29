@@ -24,7 +24,13 @@
                         <TextBlock Text="{Binding ApiStatus}" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Right">
-                        <TextBox MinWidth="220" Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}" ToolTip="Paste your OpenAI API key"/>
+                        <TextBox Width="260"
+                                 MinWidth="220"
+                                 Margin="0,0,8,0"
+                                 TextWrapping="NoWrap"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Paste your OpenAI API key"/>
                         <Button Content="{Binding TestKeyLabel}" Command="{Binding TestKeyCommand}" IsEnabled="{Binding IsTestingKey, Converter={StaticResource InverseBool}}"/>
                         <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
                     </StackPanel>
@@ -71,6 +77,16 @@
                             <TextBlock Text="Session Hint" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}" ToolTip="Helps prioritize the meeting app process"/>
                         </StackPanel>
+                        <ToggleButton Content="Coach Audio"
+                                      Margin="0,0,12,12"
+                                      Command="{Binding ToggleSpeakAnswersCommand}"
+                                      CommandParameter="{Binding IsChecked, RelativeSource={RelativeSource Self}}"
+                                      IsChecked="{Binding SpeakAnswersEnabled}"
+                                      ToolTip="Speak the generated answers aloud after each response."/>
+                        <Button Content="Auto (Live)"
+                                Margin="0,0,12,12"
+                                Command="{Binding AutoConfigureCommand}"
+                                ToolTip="Auto-configure low-latency interview settings."/>
                         <StackPanel Margin="0,0,12,12">
                             <TextBlock Text="Audio Meter" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

@@ -9,7 +9,7 @@ namespace InterviewCopilot.Windows;
 
 public partial class PerAppPickerWindow : Window
 {
-    private record SessionItem(string ProcessName, string WindowTitle, float Level);
+    private record SessionItem(string DeviceName, string EndpointId, string ProcessName, string WindowTitle, float Level);
 
     public PerAppPickerWindow()
     {
@@ -25,30 +25,22 @@ public partial class PerAppPickerWindow : Window
         {
             var items = new List<SessionItem>();
             var enumerator = new MMDeviceEnumerator();
-            // Try to use Communications device if the app is configured to do so.
-            MMDevice device;
-            try
+            var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+            foreach (var device in devices)
             {
-                var s = new InterviewCopilot.Services.JsonSettingsStore().Load();
-                var prefRole = s.TtsUseCommunications ? Role.Communications : Role.Multimedia;
-                device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, prefRole);
-            }
-            catch { device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia); }
-            var sessions = device.AudioSessionManager?.Sessions;
-            if (sessions != null)
-            {
+                var sessions = device.AudioSessionManager?.Sessions;
+                if (sessions == null) continue;
                 for (int i = 0; i < sessions.Count; i++)
                 {
-                    var s = sessions[i];
+                    var session = sessions[i];
                     string proc = string.Empty;
                     string title = string.Empty;
                     try
                     {
-                        var pi = s.GetType().GetProperty("Process");
+                        var pi = session.GetType().GetProperty("Process");
                         if (pi != null)
                         {
-                            var p = pi.GetValue(s) as Process;
-                            if (p != null)
+                            if (pi.GetValue(session) is Process p)
                             {
                                 proc = p.ProcessName ?? string.Empty;
                                 try { title = p.MainWindowTitle ?? string.Empty; } catch { }
@@ -57,11 +49,19 @@ public partial class PerAppPickerWindow : Window
                     }
                     catch { }
                     float lvl = 0f;
-                    try { lvl = s.AudioMeterInformation?.MasterPeakValue ?? 0f; } catch { }
-                    if (!string.IsNullOrEmpty(proc)) items.Add(new SessionItem(proc, title, lvl));
+                    try { lvl = session.AudioMeterInformation?.MasterPeakValue ?? 0f; } catch { }
+                    if (!string.IsNullOrEmpty(proc))
+                    {
+                        var deviceName = device.FriendlyName ?? string.Empty;
+                        items.Add(new SessionItem(deviceName, device.ID, proc, title, lvl));
+                    }
                 }
             }
-            var ordered = items.OrderByDescending(x => x.Level).ToList();
+            var ordered = items
+                .OrderByDescending(x => x.Level)
+                .ThenBy(x => x.DeviceName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(x => x.ProcessName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
             List.ItemsSource = ordered;
             EmptyText.Visibility = ordered.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -75,13 +75,13 @@ public partial class PerAppPickerWindow : Window
     {
         if (List.SelectedItem is SessionItem item)
         {
-            SelectedText.Text = item.ProcessName;
+            SelectedText.Text = $"{item.ProcessName} ({item.DeviceName})";
             // persist to settings
             var store = new InterviewCopilot.Services.JsonSettingsStore();
             var s = store.Load();
             s.PreferredProcessName = item.ProcessName;
             store.Save(s);
-            MessageBox.Show(this, $"Per-app preference set to {item.ProcessName}. Start capture to apply.");
+            MessageBox.Show(this, $"Per-app preference set to {item.ProcessName}. Make sure the capture audio source matches the {item.DeviceName} output device, then start listening.", "Per-App Picker");
         }
     }
 

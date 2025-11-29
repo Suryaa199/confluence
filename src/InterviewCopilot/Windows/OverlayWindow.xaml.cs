@@ -16,6 +16,7 @@ public partial class OverlayWindow : Window
     public void SetAnswer(string text)
     {
         AnswerText.Text = text;
+        AnswerScroll?.ScrollToBottom();
     }
 
     public void ToggleClickThrough()

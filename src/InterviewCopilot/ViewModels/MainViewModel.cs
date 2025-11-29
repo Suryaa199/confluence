@@ -119,11 +119,12 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand CopyTranscriptCommand { get; }
     public ICommand ToggleSpeakAnswersCommand { get; }
     public ICommand TestKeyCommand { get; }
+    public ICommand AutoConfigureCommand { get; }
     private string _openAiKeyInput = string.Empty;
     public ObservableCollection<string> StorySearchResults { get; } = new();
     public string CheatSheetText { get => _cheatSheetText; set { _cheatSheetText = value; OnPropertyChanged(); } }
     public string OpenAiKeyInput { get => _openAiKeyInput; set { _openAiKeyInput = value; OnPropertyChanged(); } }
-    public ObservableCollection<string> ProviderProfiles { get; } = new(new[] { "OpenAI Only", "Local Only", "Hybrid (Local LLM + OpenAI ASR)", "Hybrid (OpenAI LLM + Local ASR)", "Custom" });
+    public ObservableCollection<string> ProviderProfiles { get; } = new(new[] { "Auto (Live Interview)", "OpenAI Only", "Local Only", "Hybrid (Local LLM + OpenAI ASR)", "Hybrid (OpenAI LLM + Local ASR)", "Custom" });
     public string SelectedProviderProfile { get => _selectedProviderProfile; set { if (_selectedProviderProfile != value) { _selectedProviderProfile = value; OnPropertyChanged(); ApplyProviderProfile(value); } } }
 
     public MainViewModel()
@@ -157,6 +158,7 @@ public class MainViewModel : INotifyPropertyChanged
         CopyTranscriptCommand = new RelayCommand(_ => { try { System.Windows.Clipboard.SetText(LiveQuestion ?? string.Empty); } catch { } });
         ToggleSpeakAnswersCommand = new RelayCommand(p => ToggleSpeakAnswers(p));
         TestKeyCommand = new RelayCommand(async _ => await TestKeyAsync());
+        AutoConfigureCommand = new RelayCommand(_ => AutoConfigure());
         RefreshEndpoints();
         RefreshStatus();
         SetView("interview");
@@ -219,8 +221,7 @@ public class MainViewModel : INotifyPropertyChanged
                 foreach (var f in list) FollowUps.Add(f);
                 // Save story when follow-ups arrive (answer considered complete)
                 _ = Services.AppServices.Stories.SaveAsync(LiveQuestion, LiveAnswer, DateTimeOffset.Now);
-                var s = Services.AppServices.LoadSettings();
-                if (s.SpeakAnswers)
+                if (SpeakAnswersEnabled)
                 {
                     _ = Services.AppServices.Tts.SpeakAsync(LiveAnswer, CancellationToken.None);
                 }
@@ -411,6 +412,43 @@ public class MainViewModel : INotifyPropertyChanged
         }
         store.Save(s);
         SpeakAnswersEnabled = s.SpeakAnswers;
+    }
+
+    private void AutoConfigure()
+    {
+        ApplyAutoProfileInternal(invokedFromProfileSelection: false);
+    }
+
+    private void ApplyAutoProfileInternal(bool invokedFromProfileSelection)
+    {
+        var store = new Services.JsonSettingsStore();
+        var s = store.Load();
+        var hasKey = Services.AppServices.HasOpenAiKey();
+        s.LlmProvider = hasKey ? "OpenAI" : "Ollama";
+        s.AsrProvider = "Local"; // local ASR keeps latency low regardless of cloud availability
+        s.ChunkSizeMs = 450;
+        s.EnableSileroVad = true;
+        s.SileroWindowMs = 25;
+        s.SileroThreshold = 0.52f;
+        s.VadMinVoiceMs = 120;
+        s.VadMaxSilenceMs = 500;
+        s.SpeakAnswers = false; // default to muted coaching so meeting audio stays clean
+        store.Save(s);
+        Services.AppServices.ReloadAiClients();
+        SpeakAnswersEnabled = s.SpeakAnswers;
+        RefreshStatus();
+
+        var previousSync = _suppressProviderProfileSync;
+        _suppressProviderProfileSync = true;
+        SelectedLlmProvider = string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase) ? "Ollama" : "OpenAI";
+        SelectedAsrProvider = string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase) ? "Local" : "OpenAI";
+        _suppressProviderProfileSync = previousSync;
+
+        if (!invokedFromProfileSelection)
+        {
+            _selectedProviderProfile = "Auto (Live Interview)";
+            OnPropertyChanged(nameof(SelectedProviderProfile));
+        }
     }
 
     private void ApplyLlmProvider(string provider)
@@ -633,6 +671,10 @@ public class MainViewModel : INotifyPropertyChanged
                 SelectedLlmProvider = "Ollama";
                 SelectedAsrProvider = "Local";
                 break;
+            case "Auto (Live Interview)":
+                ApplyAutoProfileInternal(invokedFromProfileSelection: true);
+                _suppressProviderProfileSync = false;
+                return;
             case "Hybrid (Local LLM + OpenAI ASR)":
                 SelectedLlmProvider = "Ollama";
                 SelectedAsrProvider = "OpenAI";
