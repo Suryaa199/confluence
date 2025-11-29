@@ -11,7 +11,16 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        DataContext = new MainViewModel();
+        try
+        {
+            DataContext = new MainViewModel();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "Interview Copilot could not start:\n" + ex.Message, "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            Close();
+            return;
+        }
         try
         {
             string baseDir = AppContext.BaseDirectory;

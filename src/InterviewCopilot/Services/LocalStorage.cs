@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json;
 using System.IO;
 
@@ -57,9 +58,10 @@ public sealed class DiskOfflineSpooler : IOfflineSpooler
         File.WriteAllBytes(Path.Combine(SpoolDir, name), wavBytes);
     }
 
-    public async Task FlushAsync(CancellationToken ct)
+    public async Task FlushAsync(Func<byte[], CancellationToken, Task> processChunk, CancellationToken ct)
     {
         if (!Directory.Exists(SpoolDir)) return;
+        if (processChunk is null) return;
         var files = Directory.GetFiles(SpoolDir, "*.wav").OrderBy(f => f).ToList();
         foreach (var f in files)
         {
@@ -67,11 +69,17 @@ public sealed class DiskOfflineSpooler : IOfflineSpooler
             try
             {
                 var bytes = await File.ReadAllBytesAsync(f, ct);
-                // In a complete pipeline, route to ASR service
-                // For now, just delete after read to avoid buildup
+                await processChunk(bytes, ct);
                 File.Delete(f);
             }
-            catch { }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // Leave the file on disk so we can retry later if transcription fails.
+            }
         }
     }
 }

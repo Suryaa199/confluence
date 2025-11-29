@@ -24,7 +24,7 @@
                         <TextBlock Text="{Binding ApiStatus}" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Right">
-                        <TextBox Width="220" Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}" ToolTip="Paste your OpenAI API key"/>
+                        <TextBox MinWidth="220" Text="{Binding OpenAiKeyInput, UpdateSourceTrigger=PropertyChanged}" ToolTip="Paste your OpenAI API key"/>
                         <Button Content="{Binding TestKeyLabel}" Command="{Binding TestKeyCommand}" IsEnabled="{Binding IsTestingKey, Converter={StaticResource InverseBool}}"/>
                         <Button Content="Save Key" Command="{Binding SaveKeyCommand}"/>
                     </StackPanel>
@@ -35,19 +35,19 @@
                 </StackPanel>
                 <ScrollViewer Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
                     <WrapPanel>
-                        <StackPanel Width="170" Margin="0,0,12,12">
+                        <StackPanel MinWidth="170" Margin="0,0,12,12">
                             <TextBlock Text="Provider Mode" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding ProviderProfiles}" SelectedItem="{Binding SelectedProviderProfile}"/>
                         </StackPanel>
-                        <StackPanel Width="150" Margin="0,0,12,12">
+                        <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="LLM Provider" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding LlmProviders}" SelectedItem="{Binding SelectedLlmProvider}"/>
                         </StackPanel>
-                        <StackPanel Width="150" Margin="0,0,12,12">
+                        <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="ASR Provider" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding AsrProviders}" SelectedItem="{Binding SelectedAsrProvider}"/>
                         </StackPanel>
-                        <StackPanel Width="160" Margin="0,0,12,12">
+                        <StackPanel MinWidth="160" Margin="0,0,12,12">
                             <TextBlock Text="Quick Preset" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox SelectedValuePath="Content" SelectedValue="{Binding SelectedPreset}">
                                 <ComboBoxItem Content="Cloud"/>
@@ -55,19 +55,19 @@
                                 <ComboBoxItem Content="Safe"/>
                             </ComboBox>
                         </StackPanel>
-                        <StackPanel Width="150" Margin="0,0,12,12">
+                        <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="Audio Source" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}" ToolTip="Audio Source (PerApp/System/Microphone)"/>
                         </StackPanel>
-                        <StackPanel Width="230" Margin="0,0,12,12">
+                        <StackPanel MinWidth="230" Margin="0,0,12,12">
                             <TextBlock Text="Audio Endpoint" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name" ToolTip="Audio Endpoint (Default/Communications or specific device)"/>
                         </StackPanel>
-                        <StackPanel Width="150" Margin="0,0,12,12">
+                        <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="Device Preference" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}" ToolTip="Device Preference (Default vs Communications)"/>
                         </StackPanel>
-                        <StackPanel Width="150" Margin="0,0,12,12">
+                        <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="Session Hint" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}" ToolTip="Helps prioritize the meeting app process"/>
                         </StackPanel>
@@ -95,7 +95,7 @@
         <!-- Center content -->
         <Grid Grid.Row="1" Margin="12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="Auto" MinWidth="220"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -133,7 +133,7 @@
                             <Button Content="Copy" Command="{Binding CopyTranscriptCommand}" Margin="8,0,0,0"/>
                             <Button Content="{Binding ToggleCaptureLabel}" Style="{StaticResource PrimaryButton}" Command="{Binding ToggleCaptureCommand}" Margin="12,0,0,0"/>
                         </StackPanel>
-                        <Grid Height="100">
+                        <Grid>
                             <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <TextBlock Text="{Binding LiveQuestion}" TextWrapping="Wrap"/>
@@ -157,7 +157,21 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="Answer" Style="{StaticResource Subtitle}"/>
                             <ProgressBar Width="60" Height="6" Margin="8,0,0,0" IsIndeterminate="True" Visibility="{Binding IsAnswerStreaming, Converter={StaticResource BoolToVis}}"/>
-                            <Button Content="Mute TTS" Command="{Binding ToggleSpeakAnswersCommand}" Margin="8,0,0,0"/>
+                            <ToggleButton Margin="8,0,0,0"
+                                          Command="{Binding ToggleSpeakAnswersCommand}"
+                                          CommandParameter="{Binding IsChecked, RelativeSource={RelativeSource Self}}"
+                                          IsChecked="{Binding SpeakAnswersEnabled}">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+                                        <Setter Property="Content" Value="Enable TTS"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter Property="Content" Value="Mute TTS"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ToggleButton.Style>
+                            </ToggleButton>
                         </StackPanel>
                         <Grid>
                             <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1">
@@ -232,7 +246,7 @@
                 <StackPanel>
                     <TextBlock Text="Stories" Style="{StaticResource Subtitle}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
-                        <TextBox Width="220" Text="{Binding StoryQuery, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox MinWidth="220" Text="{Binding StoryQuery, UpdateSourceTrigger=PropertyChanged}"/>
                         <Button Content="Search" Command="{Binding StorySearchCommand}"/>
                         <Button Content="Today" Command="{Binding SetFilterCommand}" CommandParameter="0" Margin="8,0,0,0"/>
                         <Button Content="7d" Command="{Binding SetFilterCommand}" CommandParameter="7"/>

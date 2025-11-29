@@ -44,7 +44,7 @@ public sealed class Orchestrator : IDisposable
     {
         _cts = new CancellationTokenSource();
         await _audio.StartAsync(options);
-        _ = _spooler.FlushAsync(_cts.Token);
+        _ = _spooler.FlushAsync(ProcessSpoolChunkAsync, _cts.Token);
     }
 
     public async Task StopAsync()
@@ -105,17 +105,7 @@ public sealed class Orchestrator : IDisposable
         try
         {
             var text = await _asr.TranscribeChunkAsync(wav, _cts?.Token ?? CancellationToken.None);
-            if (!string.IsNullOrWhiteSpace(text))
-            {
-                lock (_lock)
-                {
-                    _agg.Append(_agg.Length > 0 ? " " : string.Empty);
-                    _agg.Append(text);
-                    _rev++;
-                }
-                OnTranscript?.Invoke(text);
-                _ = DebouncedGenerateAsync();
-            }
+            HandleTranscript(text);
         }
         catch (Exception ex)
         {
@@ -123,6 +113,19 @@ public sealed class Orchestrator : IDisposable
             _spooler.Enqueue(wav);
             OnAsrError?.Invoke(ex.Message);
         }
+    }
+
+    private void HandleTranscript(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+        lock (_lock)
+        {
+            _agg.Append(_agg.Length > 0 ? " " : string.Empty);
+            _agg.Append(text);
+            _rev++;
+        }
+        OnTranscript?.Invoke(text);
+        _ = DebouncedGenerateAsync();
     }
 
     public async Task GenerateAnswerAsync(string question, string context, CancellationToken ct)
@@ -177,6 +180,12 @@ public sealed class Orchestrator : IDisposable
         if (!string.IsNullOrWhiteSpace(s.ResumeText)) ctx += "Resume: " + s.ResumeText + "\n";
         if (!string.IsNullOrWhiteSpace(s.JobDescText)) ctx += "JobDesc: " + s.JobDescText + "\n";
         return ctx;
+    }
+
+    private async Task ProcessSpoolChunkAsync(byte[] wavBytes, CancellationToken ct)
+    {
+        var text = await _asr.TranscribeChunkAsync(wavBytes, ct);
+        HandleTranscript(text);
     }
 
     public void Dispose()

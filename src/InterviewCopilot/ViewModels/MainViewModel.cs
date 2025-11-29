@@ -155,7 +155,7 @@ public class MainViewModel : INotifyPropertyChanged
             }
         });
         CopyTranscriptCommand = new RelayCommand(_ => { try { System.Windows.Clipboard.SetText(LiveQuestion ?? string.Empty); } catch { } });
-        ToggleSpeakAnswersCommand = new RelayCommand(_ => ToggleSpeakAnswers());
+        ToggleSpeakAnswersCommand = new RelayCommand(p => ToggleSpeakAnswers(p));
         TestKeyCommand = new RelayCommand(async _ => await TestKeyAsync());
         RefreshEndpoints();
         RefreshStatus();
@@ -397,11 +397,18 @@ public class MainViewModel : INotifyPropertyChanged
         UpdateProviderProfileFromSelections();
     }
 
-    private void ToggleSpeakAnswers()
+    private void ToggleSpeakAnswers(object? parameter)
     {
         var store = new Services.JsonSettingsStore();
         var s = store.Load();
-        s.SpeakAnswers = !s.SpeakAnswers;
+        if (parameter is bool desired)
+        {
+            s.SpeakAnswers = desired;
+        }
+        else
+        {
+            s.SpeakAnswers = !s.SpeakAnswers;
+        }
         store.Save(s);
         SpeakAnswersEnabled = s.SpeakAnswers;
     }

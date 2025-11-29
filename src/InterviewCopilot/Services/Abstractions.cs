@@ -1,3 +1,5 @@
+using System;
+
 namespace InterviewCopilot.Services;
 
 public enum AudioSourceKind { PerApp, System, Microphone }
@@ -67,7 +69,7 @@ public interface ITtsService
 public interface IOfflineSpooler
 {
     void Enqueue(byte[] wavBytes);
-    Task FlushAsync(CancellationToken ct);
+    Task FlushAsync(Func<byte[], CancellationToken, Task> processChunk, CancellationToken ct);
 }
 
 public interface IStoryRepository

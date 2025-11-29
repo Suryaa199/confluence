@@ -1,8 +1,10 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <SolidColorBrush x:Key="Surface" Color="#0E0F11"/>
-    <SolidColorBrush x:Key="SurfaceLow" Color="#16181B"/>
-    <SolidColorBrush x:Key="SurfaceVariant" Color="#202329"/>
-    <SolidColorBrush x:Key="ChipBg" Color="#2A2A2E"/>
-    <SolidColorBrush x:Key="Primary" Color="#57D0FF"/>
+    <SolidColorBrush x:Key="Surface" Color="#11141B"/>
+    <SolidColorBrush x:Key="SurfaceLow" Color="#181E24"/>
+    <SolidColorBrush x:Key="SurfaceVariant" Color="#212834"/>
+    <SolidColorBrush x:Key="ChipBg" Color="#2C3547"/>
+    <SolidColorBrush x:Key="Primary" Color="#5FD6FF"/>
+    <SolidColorBrush x:Key="SurfaceBorder" Color="#3B4354"/>
+    <SolidColorBrush x:Key="AccentWarning" Color="#FFC66B"/>
 </ResourceDictionary>

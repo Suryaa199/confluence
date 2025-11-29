@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Win32;
 using System.Net.Http;
 using System.Linq;
@@ -11,6 +12,7 @@ public partial class SettingsWindow : Window
 {
     private readonly ISettingsStore _settings;
     private readonly ISecretStore _secrets;
+    private string _pendingApiKey = string.Empty;
 
     public SettingsWindow()
     {
@@ -84,9 +86,10 @@ public partial class SettingsWindow : Window
         _settings.Save(s);
         // Reload VAD/TTS/clients so changes take effect next start
         InterviewCopilot.Services.AppServices.ReloadAiClients();
-        if (!string.IsNullOrWhiteSpace(ApiKeyBox.Password))
+        var keyToSave = (ApiKeyBox.Password ?? string.Empty).Trim();
+        if (!string.IsNullOrWhiteSpace(keyToSave))
         {
-            _secrets.SaveSecret("OpenAI:ApiKey", ApiKeyBox.Password.Trim());
+            _secrets.SaveSecret("OpenAI:ApiKey", keyToSave);
         }
         MessageBox.Show(this, "Saved", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
         Close();
@@ -118,9 +121,9 @@ public partial class SettingsWindow : Window
         var s = _settings.Load();
         PreferredProcBox.Text = s.PreferredProcessName ?? string.Empty;
     }
-    private void OnTestKey(object sender, RoutedEventArgs e)
+    private async void OnTestKey(object sender, RoutedEventArgs e)
     {
-        var key = ApiKeyBox.Password.Trim();
+        var key = _pendingApiKey.Trim();
         if (string.IsNullOrEmpty(key))
         {
             MessageBox.Show(this, "Enter a key to test.");
@@ -128,9 +131,10 @@ public partial class SettingsWindow : Window
         }
         try
         {
+            UpdateTestButtonState(isBusy: true);
             using var http = new HttpClient();
             http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
-            var res = http.GetAsync("https://api.openai.com/v1/models").GetAwaiter().GetResult();
+            var res = await http.GetAsync("https://api.openai.com/v1/models");
             if (res.IsSuccessStatusCode)
                 MessageBox.Show(this, "Key is valid.", "API Key", MessageBoxButton.OK, MessageBoxImage.Information);
             else
@@ -139,6 +143,10 @@ public partial class SettingsWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show(this, $"Key test error: {ex.Message}", "API Key", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            UpdateTestButtonState();
         }
     }
 
@@ -203,5 +211,17 @@ public partial class SettingsWindow : Window
             return System.Text.RegularExpressions.Regex.Replace(xml, "<[^>]+>", " ").Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">");
         }
         return System.IO.File.ReadAllText(path);
+    }
+
+    private void OnApiKeyChanged(object sender, RoutedEventArgs e)
+    {
+        _pendingApiKey = (sender as PasswordBox)?.Password ?? string.Empty;
+        UpdateTestButtonState();
+    }
+
+    private void UpdateTestButtonState(bool isBusy = false)
+    {
+        if (TestKeyButton is null) return;
+        TestKeyButton.IsEnabled = !isBusy && !string.IsNullOrWhiteSpace(_pendingApiKey);
     }
 }
