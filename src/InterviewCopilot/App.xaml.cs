@@ -12,7 +12,8 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        MessageBox.Show("Unexpected error: " + e.Exception.Message, "Interview Copilot", MessageBoxButton.OK, MessageBoxImage.Error);
+        var details = e.Exception.ToString();
+        MessageBox.Show("Unexpected error:\n" + details, "Interview Copilot", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
     }
 }
