@@ -6,17 +6,21 @@
         AllowsTransparency="False" ResizeMode="CanResizeWithGrip"
         ShowInTaskbar="False">
     <Border Padding="8" CornerRadius="6" Background="#222">
-        <StackPanel>
-            <TextBlock Text="Answer (overlay)" FontWeight="Bold"/>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Text="Answer (overlay)" FontWeight="Bold" Margin="0,0,0,4"/>
             <ScrollViewer x:Name="AnswerScroll"
-                          VerticalScrollBarVisibility="Visible"
+                          Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
-                          Margin="0,4,0,0"
                           Background="#1A1A1A"
                           BorderBrush="#444"
                           BorderThickness="1">
                 <TextBlock x:Name="AnswerText" TextWrapping="Wrap" Margin="4"/>
             </ScrollViewer>
-        </StackPanel>
+        </Grid>
     </Border>
 </Window>
