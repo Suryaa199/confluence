@@ -18,10 +18,16 @@ public sealed class AnswerPromptBuilder
     public LlmPrompt Build(string question)
     {
         var profile = _classifier.Classify(question);
-        var snippets = _contextRetriever.GetTopSnippets(question);
+        var (maxSnippets, minScore) = profile switch
+        {
+            QuestionType.Definition => (2, 0.08),
+            QuestionType.Command => (2, 0.08),
+            _ => (4, 0.02)
+        };
+        var snippets = _contextRetriever.GetTopSnippets(question, maxSnippets, minScore);
         var scenario = ScenarioLibrary.MatchScenario(question, snippets);
 
-        var context = ComposeContext(snippets, scenario);
+        var context = ComposeContext(snippets, scenario, profile);
         var systemInstruction = PromptTemplates.GetSystemInstruction(profile);
         if (!string.IsNullOrWhiteSpace(scenario.Topic))
         {
@@ -31,20 +37,26 @@ public sealed class AnswerPromptBuilder
         return new LlmPrompt(question, context, systemInstruction);
     }
 
-    private string ComposeContext(IReadOnlyList<ContextSnippet> snippets, ScenarioEntry scenario)
+    private string ComposeContext(IReadOnlyList<ContextSnippet> snippets, ScenarioEntry scenario, QuestionType type)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Candidate: Surya — DevSecOps Engineer at HCL building AI Force (Generative AI platform).");
-        sb.AppendLine("Core Stack: Azure, AKS/Kubernetes, Terraform IaC, Docker, Keycloak, NGINX, ACR, GitHub Actions, Python automation, OpenAI/LLMs.");
-        sb.AppendLine("Keywords: " + _contextRetriever.DefaultKeywords);
-        if (_settings.Keywords is { Length: > 0 })
+        sb.AppendLine("Candidate: Surya — DevSecOps Engineer building AI Force at HCL.");
+        if (type != QuestionType.Definition && type != QuestionType.Command)
         {
-            sb.AppendLine("Custom Keywords: " + string.Join(", ", _settings.Keywords));
+            sb.AppendLine("Core Stack: Azure, AKS, Terraform, Docker, Keycloak, NGINX, ACR, CI/CD, Python automation, OpenAI.");
+            sb.AppendLine("Keywords: " + _contextRetriever.DefaultKeywords);
+            if (_settings.Keywords is { Length: > 0 })
+            {
+                sb.AppendLine("Custom Keywords: " + string.Join(", ", _settings.Keywords));
+            }
         }
 
         if (snippets.Count > 0)
         {
-            sb.AppendLine("Relevant Context:");
+            var header = (type == QuestionType.Definition || type == QuestionType.Command)
+                ? "Personal Usage:"
+                : "Relevant Context:";
+            sb.AppendLine(header);
             foreach (var sn in snippets)
             {
                 sb.Append("- ");

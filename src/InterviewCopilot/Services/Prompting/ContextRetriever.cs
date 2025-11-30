@@ -1,5 +1,6 @@
 using InterviewCopilot.Models;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace InterviewCopilot.Services.Prompting;
@@ -76,12 +77,13 @@ public sealed class ContextRetriever
         if (sb.Length > 0) yield return sb.ToString().Trim();
     }
 
-    public IReadOnlyList<ContextSnippet> GetTopSnippets(string question, int max = 4)
+    public IReadOnlyList<ContextSnippet> GetTopSnippets(string question, int max = 4, double minScore = 0.02)
     {
         if (_snippets.Count == 0) return Array.Empty<ContextSnippet>();
         var qTokens = Tokenize(question);
         var ranked = _snippets
             .Select(sn => new { Snippet = sn, Score = ScoreSnippet(sn.Text, qTokens) })
+            .Where(x => x.Score >= minScore)
             .OrderByDescending(x => x.Score)
             .ThenBy(x => x.Snippet.Source)
             .Take(max)
