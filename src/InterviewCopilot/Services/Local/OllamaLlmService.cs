@@ -23,7 +23,15 @@ public sealed class OllamaLlmService : ILlmService
             stream = true,
             messages = new object[]
             {
-                new { role = "system", content = "You are an interview copilot. Be concise, structured, and include key points and examples." },
+                new
+                {
+                    role = "system",
+                    content = "You are Surya's live DevSecOps interview copilot. Follow this exact structure:\n" +
+                              "1) Provide 5-10 concise lines that answer the question using resume/JD context. Mention Azure, AKS/Kubernetes, Terraform, DevOps/DevSecOps, CI/CD, Docker, Keycloak, NGINX, ACR, Python automation, OpenAI/LLMs whenever relevant.\n" +
+                              "2) Add a line starting with \"Mini Example:\" describing a concrete recent win with measurable impact.\n" +
+                              "3) Add a line starting with \"CLI Example:\" followed by 1-3 relevant commands (az, kubectl, terraform, docker, trivy, etc.).\n" +
+                              "Use first-person voice (\"I\"), highlight impact, keep answers interview-ready, no markdown bullets."
+                },
                 new { role = "user", content = $"Context:\n{context}\n\nQuestion:\n{question}" }
             }
         };

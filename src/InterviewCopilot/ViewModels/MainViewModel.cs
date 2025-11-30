@@ -489,12 +489,18 @@ public class MainViewModel : INotifyPropertyChanged
     private static string BuildContextFromSettings()
     {
         var settings = Services.AppServices.LoadSettings();
-        var context = string.Empty;
-        if (settings.Keywords is { Length: > 0 }) context += "Keywords: " + string.Join(", ", settings.Keywords) + "\n";
-        if (!string.IsNullOrWhiteSpace(settings.CompanyBlurb)) context += "Company: " + settings.CompanyBlurb + "\n";
-        if (!string.IsNullOrWhiteSpace(settings.ResumeText)) context += "Resume: " + settings.ResumeText + "\n";
-        if (!string.IsNullOrWhiteSpace(settings.JobDescText)) context += "JobDesc: " + settings.JobDescText + "\n";
-        return context;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Candidate: Surya — DevSecOps Engineer (6+ years at HCL, AI Force platform).");
+        var defaultKeywords = "Azure, AKS, Kubernetes, Terraform, DevOps, DevSecOps, CI/CD, Docker, Keycloak, NGINX, ACR, Python automation, OpenAI, Generative AI";
+        var keywords = (settings.Keywords is { Length: > 0 })
+            ? string.Join(", ", settings.Keywords) + ", " + defaultKeywords
+            : defaultKeywords;
+        sb.AppendLine("Keywords: " + keywords);
+        if (!string.IsNullOrWhiteSpace(settings.CompanyBlurb)) sb.AppendLine("Company: " + settings.CompanyBlurb);
+        if (!string.IsNullOrWhiteSpace(settings.ResumeText)) sb.AppendLine("Resume: " + settings.ResumeText);
+        if (!string.IsNullOrWhiteSpace(settings.JobDescText)) sb.AppendLine("JobDesc: " + settings.JobDescText);
+        if (!string.IsNullOrWhiteSpace(settings.CheatSheet)) sb.AppendLine("CheatSheet: " + settings.CheatSheet);
+        return sb.ToString();
     }
 
     private async Task TogglePauseAsync()

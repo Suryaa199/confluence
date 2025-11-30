@@ -1,5 +1,6 @@
 using InterviewCopilot.Models;
 using InterviewCopilot.Services.Audio;
+using System.Text;
 
 namespace InterviewCopilot.Services;
 
@@ -171,15 +172,22 @@ public sealed class Orchestrator : IDisposable
         }
     }
 
+    private static readonly string DefaultKeywords = "Azure, AKS, Kubernetes, Terraform, DevOps, DevSecOps, CI/CD, Docker, Keycloak, NGINX, ACR, Python automation, OpenAI, Generative AI, Confluence connectors";
+
     private string BuildContext()
     {
         var s = _settings;
-        var ctx = string.Empty;
-        if (s.Keywords is { Length: > 0 }) ctx += "Keywords: " + string.Join(", ", s.Keywords) + "\n";
-        if (!string.IsNullOrWhiteSpace(s.CompanyBlurb)) ctx += "Company: " + s.CompanyBlurb + "\n";
-        if (!string.IsNullOrWhiteSpace(s.ResumeText)) ctx += "Resume: " + s.ResumeText + "\n";
-        if (!string.IsNullOrWhiteSpace(s.JobDescText)) ctx += "JobDesc: " + s.JobDescText + "\n";
-        return ctx;
+        var sb = new StringBuilder();
+        sb.AppendLine("Candidate: Surya — DevSecOps Engineer (6+ years at HCL, AI Force platform owner).");
+        var keywords = (s.Keywords is { Length: > 0 })
+            ? string.Join(", ", s.Keywords) + ", " + DefaultKeywords
+            : DefaultKeywords;
+        sb.AppendLine("Keywords: " + keywords);
+        if (!string.IsNullOrWhiteSpace(s.CompanyBlurb)) sb.AppendLine("Company: " + s.CompanyBlurb);
+        if (!string.IsNullOrWhiteSpace(s.ResumeText)) sb.AppendLine("Resume: " + s.ResumeText);
+        if (!string.IsNullOrWhiteSpace(s.JobDescText)) sb.AppendLine("JobDesc: " + s.JobDescText);
+        if (!string.IsNullOrWhiteSpace(s.CheatSheet)) sb.AppendLine("CheatSheet: " + s.CheatSheet);
+        return sb.ToString();
     }
 
     private async Task ProcessSpoolChunkAsync(byte[] wavBytes, CancellationToken ct)
