@@ -38,8 +38,22 @@ public partial class PerAppPickerWindow : Window
                     try
                     {
                         int pid = 0;
-                        var pidProp = session.GetType().GetProperty("ProcessID");
-                        if (pidProp?.GetValue(session) is int value) pid = value;
+                        try
+                        {
+                            var getPid = session.GetType().GetMethod("GetProcessID");
+                            if (getPid is not null)
+                            {
+                                var result = getPid.Invoke(session, null);
+                                if (result is uint upid) pid = (int)upid;
+                                else if (result is int ipid) pid = ipid;
+                            }
+                        }
+                        catch { }
+                        if (pid == 0)
+                        {
+                            var pidProp = session.GetType().GetProperty("ProcessID");
+                            if (pidProp?.GetValue(session) is int value) pid = value;
+                        }
                         if (pid > 0)
                         {
                             using var p = Process.GetProcessById(pid);

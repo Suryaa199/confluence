@@ -6,7 +6,7 @@
         mc:Ignorable="d"
         Title="Interview Copilot" Height="720" Width="1100" MinWidth="900" MinHeight="640"
         UseLayoutRounding="True" SnapsToDevicePixels="True"
-        Topmost="True" WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen">
     <Grid Background="{DynamicResource Surface}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
