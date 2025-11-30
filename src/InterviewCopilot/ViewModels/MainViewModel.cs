@@ -164,6 +164,10 @@ public class MainViewModel : INotifyPropertyChanged
         SetView("interview");
         _flushTimer.Tick += (s, e) => FlushAnswerBuffer();
         SpeakAnswersEnabled = Services.AppServices.LoadSettings().SpeakAnswers;
+        if (System.Windows.Application.Current is System.Windows.Application app)
+        {
+            app.Exit += (_, __) => _overlay?.Close();
+        }
 
         // Initialize provider selectors from settings
         var s = Services.AppServices.LoadSettings();
@@ -265,15 +269,7 @@ public class MainViewModel : INotifyPropertyChanged
         await _orchestrator.StartAsync(options);
 
         // Auto-open overlay when starting listening
-        App.Current.Dispatcher.Invoke(() =>
-        {
-            if (_overlay is null || !_overlay.IsVisible)
-            {
-                _overlay = new InterviewCopilot.Windows.OverlayWindow();
-                _overlay.Owner = System.Windows.Application.Current.MainWindow;
-                _overlay.Show();
-            }
-        });
+        App.Current.Dispatcher.Invoke(() => EnsureOverlayVisible());
     }
 
     private async void Stop()
@@ -550,9 +546,7 @@ public class MainViewModel : INotifyPropertyChanged
     {
         if (_overlay is null)
         {
-            _overlay = new InterviewCopilot.Windows.OverlayWindow();
-            _overlay.Owner = System.Windows.Application.Current.MainWindow;
-            _overlay.Show();
+            EnsureOverlayVisible();
         }
         else
         {
@@ -562,13 +556,8 @@ public class MainViewModel : INotifyPropertyChanged
 
     private void ToggleClickThrough()
     {
-        if (_overlay is null)
-        {
-            _overlay = new InterviewCopilot.Windows.OverlayWindow();
-            _overlay.Owner = System.Windows.Application.Current.MainWindow;
-            _overlay.Show();
-        }
-        _overlay.ToggleClickThrough();
+        EnsureOverlayVisible();
+        _overlay?.ToggleClickThrough();
     }
 
     private void OpenSettings()
@@ -724,6 +713,17 @@ public class MainViewModel : INotifyPropertyChanged
             _selectedProviderProfile = profile;
             OnPropertyChanged(nameof(SelectedProviderProfile));
         }
+    }
+
+    private void EnsureOverlayVisible()
+    {
+        if (_overlay is null)
+        {
+            _overlay = new InterviewCopilot.Windows.OverlayWindow();
+            _overlay.Closed += (_, __) => _overlay = null;
+        }
+        if (!_overlay.IsVisible) _overlay.Show();
+        _overlay.Activate();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
