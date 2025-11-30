@@ -32,7 +32,7 @@ public sealed class NoopAsrService : IAsrService
 
 public sealed class NoopLlmService : ILlmService
 {
-    public async IAsyncEnumerable<string> StreamAnswerAsync(string question, string context, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<string> StreamAnswerAsync(LlmPrompt prompt, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
         var parts = new[] { "Here ", "is ", "a ", "stub ", "answer." };
         foreach (var p in parts)
@@ -58,21 +58,22 @@ public sealed class NoopLlmService : ILlmService
 public sealed class DefaultCoachingService : ICoachingService
 {
     private readonly ILlmService _llm;
+    private readonly Prompting.PromptLogger _logger = new();
     public DefaultCoachingService(ILlmService llm) { _llm = llm; }
 
     public async Task GenerateAsync(
-        string question,
-        string? cheatSheet,
+        LlmPrompt prompt,
         Action<string>? onAnswerToken,
         Action<IReadOnlyList<string>>? onFollowUps,
         CancellationToken ct)
     {
-        var context = cheatSheet ?? string.Empty;
+        var answerBuffer = new System.Text.StringBuilder();
         try
         {
-            await foreach (var token in _llm.StreamAnswerAsync(question, context, ct))
+            await foreach (var token in _llm.StreamAnswerAsync(prompt, ct))
             {
                 onAnswerToken?.Invoke(token);
+                answerBuffer.Append(token);
             }
         }
         catch (OperationCanceledException)
@@ -83,11 +84,18 @@ public sealed class DefaultCoachingService : ICoachingService
         {
             throw new InvalidOperationException($"Failed to stream coaching answer: {ex.Message}", ex);
         }
+        finally
+        {
+            if (answerBuffer.Length > 0)
+            {
+                _ = _logger.TryLog(prompt, answerBuffer.ToString());
+            }
+        }
 
         IReadOnlyList<string> followUps = Array.Empty<string>();
         try
         {
-            followUps = await _llm.GenerateFollowUpsAsync(question, context, ct);
+            followUps = await _llm.GenerateFollowUpsAsync(prompt.Question, prompt.Context, ct);
         }
         catch
         {

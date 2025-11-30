@@ -1,5 +1,6 @@
 using InterviewCopilot.Models;
 using InterviewCopilot.Services.Audio;
+using InterviewCopilot.Services.Prompting;
 using System.Text;
 
 namespace InterviewCopilot.Services;
@@ -12,6 +13,7 @@ public sealed class Orchestrator : IDisposable
     private readonly ICoachingService _coach;
     private readonly IOfflineSpooler _spooler;
     private readonly Settings _settings;
+    private readonly AnswerPromptBuilder _promptBuilder;
 
     private CancellationTokenSource? _cts;
     private readonly List<float> _currentBuffer = new();
@@ -37,6 +39,7 @@ public sealed class Orchestrator : IDisposable
         _coach = coach;
         _spooler = spooler;
         _settings = settings;
+        _promptBuilder = new AnswerPromptBuilder(settings);
         _vad.Configure(enabled: true, minVoiceMs: settings.VadMinVoiceMs, maxSilenceMs: settings.VadMaxSilenceMs);
         _audio.OnFrame += HandleFrame;
     }
@@ -129,13 +132,12 @@ public sealed class Orchestrator : IDisposable
         _ = DebouncedGenerateAsync();
     }
 
-    public async Task GenerateAnswerAsync(string question, string context, CancellationToken ct)
+    public async Task GenerateAnswerAsync(LlmPrompt prompt, CancellationToken ct)
     {
         try
         {
             await _coach.GenerateAsync(
-                question,
-                context,
+                prompt,
                 token => OnAnswerToken?.Invoke(token),
                 followUps => OnFollowUps?.Invoke(followUps),
                 ct);
@@ -161,33 +163,15 @@ public sealed class Orchestrator : IDisposable
             if (startRev != _rev || _answerInProgress) return;
             _answerInProgress = true;
         }
-        var ctx = BuildContext();
+        var prompt = _promptBuilder.Build(question);
         try
         {
-            await GenerateAnswerAsync(question, ctx, _cts?.Token ?? CancellationToken.None);
+            await GenerateAnswerAsync(prompt, _cts?.Token ?? CancellationToken.None);
         }
         finally
         {
             lock (_lock) _answerInProgress = false;
         }
-    }
-
-    private static readonly string DefaultKeywords = "Azure, AKS, Kubernetes, Terraform, DevOps, DevSecOps, CI/CD, Docker, Keycloak, NGINX, ACR, Python automation, OpenAI, Generative AI, Confluence connectors";
-
-    private string BuildContext()
-    {
-        var s = _settings;
-        var sb = new StringBuilder();
-        sb.AppendLine("Candidate: Surya — DevSecOps Engineer (6+ years at HCL, AI Force platform owner).");
-        var keywords = (s.Keywords is { Length: > 0 })
-            ? string.Join(", ", s.Keywords) + ", " + DefaultKeywords
-            : DefaultKeywords;
-        sb.AppendLine("Keywords: " + keywords);
-        if (!string.IsNullOrWhiteSpace(s.CompanyBlurb)) sb.AppendLine("Company: " + s.CompanyBlurb);
-        if (!string.IsNullOrWhiteSpace(s.ResumeText)) sb.AppendLine("Resume: " + s.ResumeText);
-        if (!string.IsNullOrWhiteSpace(s.JobDescText)) sb.AppendLine("JobDesc: " + s.JobDescText);
-        if (!string.IsNullOrWhiteSpace(s.CheatSheet)) sb.AppendLine("CheatSheet: " + s.CheatSheet);
-        return sb.ToString();
     }
 
     private async Task ProcessSpoolChunkAsync(byte[] wavBytes, CancellationToken ct)

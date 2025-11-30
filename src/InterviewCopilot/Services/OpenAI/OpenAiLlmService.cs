@@ -20,7 +20,7 @@ public sealed class OpenAiLlmService : ILlmService
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
     }
 
-    public async IAsyncEnumerable<string> StreamAnswerAsync(string question, string context, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<string> StreamAnswerAsync(LlmPrompt prompt, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
         System.Net.Http.HttpResponseMessage res = null!;
         for (int attempt = 0; attempt < 3; attempt++)
@@ -35,18 +35,8 @@ public sealed class OpenAiLlmService : ILlmService
                 stream = true,
                 messages = new object[]
                 {
-                new
-                {
-                    role = "system",
-                    content = "You are Surya's live DevSecOps interview copilot. Adapt to the question:\n" +
-                              "- If it is a practical interview question (story, challenge, experience), provide 5-10 concise lines linking to resume/JD context (Azure, AKS/Kubernetes, Terraform, DevOps/DevSecOps, CI/CD, Docker, Keycloak, NGINX, ACR, Python automation, OpenAI/LLMs when relevant).\n" +
-                              "- If it is a definition/comparison/tool question (e.g., \"What is git fetch?\"), start with a direct explanation and key distinctions before relating to experience.\n" +
-                              "Always finish with:\n" +
-                              "1) a line starting with \"Mini Example:\" describing a concrete win, or a quick usage scenario if the question is purely theoretical;\n" +
-                              "2) a line starting with \"CLI Example:\" containing 1-3 relevant commands (az, kubectl, terraform, docker, trivy, git, etc.).\n" +
-                              "Use first-person voice (\"I\" when describing experience), stay interview-ready, avoid bullet/number lists, plain text only."
-                },
-                    new { role = "user", content = $"Context:\n{context}\n\nQuestion:\n{question}" }
+                    new { role = "system", content = prompt.SystemInstruction },
+                    new { role = "user", content = $"Context:\n{prompt.Context}\n\nQuestion:\n{prompt.Question}" }
                 }
             };
             req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");

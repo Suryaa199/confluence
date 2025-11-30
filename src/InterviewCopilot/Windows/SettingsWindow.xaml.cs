@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Linq;
 using System.IO.Compression;
 using InterviewCopilot.Services;
+using InterviewCopilot.Services.Prompting;
 
 namespace InterviewCopilot.Windows;
 
@@ -173,17 +174,14 @@ public partial class SettingsWindow : Window
     private async void OnGenerateCheatSheet(object sender, RoutedEventArgs e)
     {
         var s = _settings.Load();
-        string ctx = "";
-        if (s.Keywords is { Length: > 0 }) ctx += "Keywords: " + string.Join(", ", s.Keywords) + "\n";
-        if (!string.IsNullOrWhiteSpace(s.CompanyBlurb)) ctx += "Company: " + s.CompanyBlurb + "\n";
-        if (!string.IsNullOrWhiteSpace(s.ResumeText)) ctx += "Resume: " + s.ResumeText + "\n";
-        if (!string.IsNullOrWhiteSpace(s.JobDescText)) ctx += "JobDesc: " + s.JobDescText + "\n";
+        var builder = new AnswerPromptBuilder(s);
+        var prompt = builder.Build("Generate a concise company-role cheat sheet with bullet points and key talking points.");
         CheatBox.Text = "Generating cheat sheet...";
         try
         {
             var sb = new System.Text.StringBuilder();
             await foreach (var tok in InterviewCopilot.Services.AppServices.Llm.StreamAnswerAsync(
-                "Generate a concise company-role cheat sheet with bullet points and key talking points.", ctx, System.Threading.CancellationToken.None))
+                prompt, System.Threading.CancellationToken.None))
             {
                 sb.Append(tok);
                 CheatBox.Text = sb.ToString();

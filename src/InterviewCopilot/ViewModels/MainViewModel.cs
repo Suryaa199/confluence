@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Windows.Threading;
 using InterviewCopilot.Services;
+using InterviewCopilot.Services.Prompting;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
@@ -40,6 +41,7 @@ public class MainViewModel : INotifyPropertyChanged
     private bool _isAnswerStreaming;
     private bool _speakAnswersEnabled;
     private readonly HttpClient _httpClient = new();
+    private readonly PromptLogger _promptLogger = new();
     private bool _isTestingKey;
     private string _keyStatusMessage = "OpenAI key not saved.";
     private string _selectedProviderProfile = "OpenAI Only";
@@ -323,19 +325,21 @@ public class MainViewModel : INotifyPropertyChanged
 
     private async Task RegenerateAsync()
     {
-        var ctx = BuildContextFromSettings();
         var q = string.IsNullOrWhiteSpace(LiveQuestion) ? "Give a concise summary of my strengths." : LiveQuestion;
+        var builder = new AnswerPromptBuilder(Services.AppServices.LoadSettings());
+        var prompt = builder.Build(q);
         LiveAnswer = string.Empty;
         lock (_answerBuffer) _answerBuffer.Clear();
         IsAnswerStreaming = true;
         try
         {
-            await foreach (var token in Services.AppServices.Llm.StreamAnswerAsync(q, ctx, CancellationToken.None))
+            await foreach (var token in Services.AppServices.Llm.StreamAnswerAsync(prompt, CancellationToken.None))
             {
                 lock (_answerBuffer) _answerBuffer.Append(token);
                 if (!_flushTimer.IsEnabled) _flushTimer.Start();
             }
             IsAnswerStreaming = false;
+            _promptLogger.TryLog(prompt, LiveAnswer);
         }
         catch (Exception ex)
         {
@@ -480,23 +484,6 @@ public class MainViewModel : INotifyPropertyChanged
         store.Save(s);
         Services.AppServices.ReloadAiClients();
         RefreshStatus();
-    }
-
-    private static string BuildContextFromSettings()
-    {
-        var settings = Services.AppServices.LoadSettings();
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine("Candidate: Surya — DevSecOps Engineer (6+ years at HCL, AI Force platform).");
-        var defaultKeywords = "Azure, AKS, Kubernetes, Terraform, DevOps, DevSecOps, CI/CD, Docker, Keycloak, NGINX, ACR, Python automation, OpenAI, Generative AI";
-        var keywords = (settings.Keywords is { Length: > 0 })
-            ? string.Join(", ", settings.Keywords) + ", " + defaultKeywords
-            : defaultKeywords;
-        sb.AppendLine("Keywords: " + keywords);
-        if (!string.IsNullOrWhiteSpace(settings.CompanyBlurb)) sb.AppendLine("Company: " + settings.CompanyBlurb);
-        if (!string.IsNullOrWhiteSpace(settings.ResumeText)) sb.AppendLine("Resume: " + settings.ResumeText);
-        if (!string.IsNullOrWhiteSpace(settings.JobDescText)) sb.AppendLine("JobDesc: " + settings.JobDescText);
-        if (!string.IsNullOrWhiteSpace(settings.CheatSheet)) sb.AppendLine("CheatSheet: " + settings.CheatSheet);
-        return sb.ToString();
     }
 
     private async Task TogglePauseAsync()

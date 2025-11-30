@@ -14,7 +14,7 @@ public sealed class OllamaLlmService : ILlmService
         _http = new System.Net.Http.HttpClient { BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/") };
     }
 
-    public async IAsyncEnumerable<string> StreamAnswerAsync(string question, string context, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<string> StreamAnswerAsync(LlmPrompt prompt, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
         var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "api/chat");
         var body = new
@@ -23,18 +23,8 @@ public sealed class OllamaLlmService : ILlmService
             stream = true,
             messages = new object[]
             {
-                new
-                {
-                    role = "system",
-                    content = "You are Surya's live DevSecOps interview copilot. Adapt to the question:\n" +
-                              "- For experience-based questions, supply 5-10 concise lines tied to resume/JD context (Azure, AKS/Kubernetes, Terraform, DevOps/DevSecOps, CI/CD, Docker, Keycloak, NGINX, ACR, Python automation, OpenAI/LLMs when relevant).\n" +
-                              "- For definition/comparison/tool questions, begin with a clear explanation and contrast before mentioning how Surya uses it.\n" +
-                              "Always end with:\n" +
-                              "Mini Example: <one concrete scenario or quick usage>\n" +
-                              "CLI Example: <1-3 commands such as az/kubectl/terraform/docker/git/trivy>\n" +
-                              "Use first-person voice, plain text, no markdown bullets."
-                },
-                new { role = "user", content = $"Context:\n{context}\n\nQuestion:\n{question}" }
+                new { role = "system", content = prompt.SystemInstruction },
+                new { role = "user", content = $"Context:\n{prompt.Context}\n\nQuestion:\n{prompt.Question}" }
             }
         };
         req.Content = new System.Net.Http.StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");

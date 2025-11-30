@@ -50,17 +50,18 @@ public interface IAsrService
     Task<string> TranscribeChunkAsync(byte[] wavBytes, CancellationToken ct);
 }
 
+public readonly record struct LlmPrompt(string Question, string Context, string SystemInstruction);
+
 public interface ILlmService
 {
-    IAsyncEnumerable<string> StreamAnswerAsync(string question, string context, CancellationToken ct);
+    IAsyncEnumerable<string> StreamAnswerAsync(LlmPrompt prompt, CancellationToken ct);
     Task<IReadOnlyList<string>> GenerateFollowUpsAsync(string question, string context, CancellationToken ct);
 }
 
 public interface ICoachingService
 {
     Task GenerateAsync(
-        string question,
-        string? cheatSheet,
+        LlmPrompt prompt,
         Action<string>? onAnswerToken,
         Action<IReadOnlyList<string>>? onFollowUps,
         CancellationToken ct);
