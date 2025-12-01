@@ -250,23 +250,29 @@ public class MainViewModel : INotifyPropertyChanged
         _answerStreamStarted = false;
         _orchestrator.OnTranscript += text =>
         {
-            LiveQuestion += (LiveQuestion.Length > 0 ? " " : "") + text;
-            UpdatePredictedFollowUps();
+            App.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                LiveQuestion += (LiveQuestion.Length > 0 ? " " : "") + text;
+                UpdatePredictedFollowUps();
+            });
         };
         _orchestrator.OnAnswerToken += tok =>
         {
-            if (!_answerStreamStarted)
+            App.Current?.Dispatcher.BeginInvoke(() =>
             {
-                LiveAnswer = string.Empty;
-                _overlay?.SetAnswer(string.Empty);
-                _answerStreamStarted = true;
-            }
-            lock (_answerBuffer)
-            {
-                _answerBuffer.Append(tok);
-            }
-            if (!_flushTimer.IsEnabled) _flushTimer.Start();
-            IsAnswerStreaming = true;
+                if (!_answerStreamStarted)
+                {
+                    LiveAnswer = string.Empty;
+                    _overlay?.SetAnswer(string.Empty);
+                    _answerStreamStarted = true;
+                }
+                lock (_answerBuffer)
+                {
+                    _answerBuffer.Append(tok);
+                }
+                if (!_flushTimer.IsEnabled) _flushTimer.Start();
+                IsAnswerStreaming = true;
+            });
         };
         _orchestrator.OnFollowUps += list =>
         {
