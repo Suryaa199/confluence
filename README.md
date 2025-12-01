@@ -1,99 +1,97 @@
 Interview Copilot (Windows/desktop) [![CI (Windows build)](https://github.com/Suryaa199/AI_AGENT/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Suryaa199/AI_AGENT/actions/workflows/ci.yml)
 
-UI (Parakeet AI style and add scroll when ever it requireds  ) always-on-top Windows assistant for live interviews. Captures meeting audio (per-app/System/Mic), transcribes with OpenAI Whisper, and streams answers token-by-token using GPT-4o/4o-mini. Answers include key points, concrete examples, and CLI commands. Includes follow-up predictor, company cheat sheet, keywords, and offline ASR buffer.
+Interview Copilot is a Windows assistant inspired by tools like Parakeet AI. It captures live meeting audio, transcribes questions, and streams “co-pilot style” answers that include resume context, mini examples, and CLI commands. The overlay stays on top (or on a second monitor) so you can read answers in real time while screen sharing.
 
-Quick Start
-- Requirements: Windows 10/11, .NET 8 SDK, OpenAI API key (or local providers).
-- Models: Uses OpenAI Whisper (Transcriptions) and GPT-4o/4o-mini. Optional local: Faster‑Whisper + Ollama.
-- Build: Open with Visual Studio 2022 or build from CLI.
+---
 
-Features (MVP)
-- Per-app/System/Microphone audio capture selector.
-- Real-time transcription via OpenAI Whisper.
-- Streaming answers (token-by-token) via GPT-4o/4o-mini.
-- UI (Parakeet AI style)/ Interview (Question small size, Answer large size in the new window only question+answers /start-stop listen).
-- Company quick context (paste blurb → cheat sheet).
-- Follow-up predictor chips.
-- Offline ASR buffer (queues audio when offline; backfills later).
-- Story Bank: save answers; review/search from Settings.
-- Resume/JD: parse .txt/.docx automatically. (PDF parsing deferred for CI stability; convert PDFs to text/docx for now.)
+## Quick Start
 
-Enhancements
-- TTS isolated to Communications device for earpiece-only coaching.
-- Per-app session picker (with process names and window titles).
-- Adjustable ASR chunk size and VAD thresholds in Settings.
-- Offline spooler for audio chunks to backfill on reconnect.
+1. **Requirements**
+   - Windows 10/11
+   - .NET 8 SDK
+   - OpenAI API key (optional: local Faster-Whisper + Ollama)
 
-Repo Structure
-- `src/InterviewCopilot/` WPF app (.NET 8, UseWPF)
-  - Shell: `App.xaml`, `MainWindow`, `MainViewModel`
-  - Windows: `Windows/OverlayWindow`, `Windows/SettingsWindow`, `Windows/PerAppPickerWindow`
-  - Pages: `SettingsPage`, `InterviewPage` (auxiliary)
-  - Services
-    - Abstractions: `ISettingsStore`, `ISecretStore`, `IAudioService`, `IAsrService`, `ILlmService`, `ICoachingService`, `IStoryRepository`, `IOfflineSpooler`, `ITtsService`, `IVadService`
-    - Audio: `NaudioAudioService`, `Resampler`, `VadEnergyGate`, `SileroVadService`
-    - OpenAI: `OpenAiLlmService`, `OpenAiWhisperAsrService`
-    - Local: `OllamaLlmService`, `LocalAsrService`
-    - Storage: `JsonSettingsStore`, `DpapiSecretStore`, `FileStoryRepository`, `DiskOfflineSpooler`
-  - Resources: `Colors.xaml`, `Typography.xaml`, `Styles.xaml`
-  - Models: `Settings`, `CoachingState`
-
-Setup
-1) Set `OPENAI_API_KEY` in your user environment (if using OpenAI).
-2) Build and run:
-   - Visual Studio: open `InterviewCopilot.sln`, restore, run.
+2. **Build**
+   - Visual Studio 2022: open `InterviewCopilot.sln`, restore, run.
    - CLI: `dotnet restore && dotnet build && dotnet run --project src/InterviewCopilot`
-3) API key in app: On Settings, paste your OpenAI key and click “Test Key” → “Save Key”. The key is stored encrypted (Windows DPAPI, user scope). If empty, the app uses `OPENAI_API_KEY` when present.
-4) Package (Windows): `powershell -ExecutionPolicy Bypass -File scripts/publish-win.ps1` → `dist/win-x64/InterviewCopilot.exe`
-5) Optional MSIX (Windows SDK): `powershell -ExecutionPolicy Bypass -File scripts/make-msix.ps1 -Publisher "CN=Your Name"` → `dist/InterviewCopilot.msix`
-6) First run tips:
-   - Paste resume/JD text or load .txt/.docx; add keywords and optional company blurb; click “Generate Cheat Sheet”.
-   - Choose Audio Source: Per‑app (picker), System (loopback), or Microphone.
-   - Click Start Listening to begin.
 
-Notes
-- Streaming uses OpenAI Chat Completions with `stream=true`.
-- Transcription sends short WAV chunks to OpenAI Whisper.
-- Per-app capture: Windows does not expose a stable public API to capture a single app’s audio stream directly on all versions. This app provides a per-app picker (Teams/Zoom/Browser) and uses a best-effort approach with loopback on the Communications device. For more isolation, set your meeting app to output to the Communications device and keep other apps on the Default device.
-- Offline buffer stores short WAV files and transcribes when network returns.
- - ONNX VAD (Silero): optional toggle in Settings. Place `models/silero_vad.onnx` under the app directory. The app uses it for tighter start/stop gating if present; otherwise energy-based VAD is used. (Inference pipeline is conservative at first; we aim for reliable boundaries.)
+3. **Configure**
+   - Launch the app, open **Settings**, paste your OpenAI key, **Test** → **Save Key** (stored via Windows DPAPI). If `OPENAI_API_KEY` is set, the app can read it automatically.
+   - Load or paste resume/JD text, keywords, and the company blurb; click **Generate Cheat Sheet** to pre-seed context.
+   - Choose audio source (PerApp/System/Mic). For best isolation, set your meeting app to the Windows “Communications” device and choose PerApp + Communications in the app.
 
-Hotkeys
-- Alt+P: Toggle click-through overlay
-- Alt+C: Copy current answer
-- Alt+G: Regenerate answer
-- Alt+S: Pause capture
+4. **Run**
+   - Click **Start Listening**. The overlay appears (keep it on a second monitor for privacy) and answers stream as questions are detected.
+   - Use the toolbar **Live Cue** field to inject hints (e.g., “mention ArgoCD”) for the next answer.
 
-Per-App Best Practices
-- In Teams/Zoom/Meet, set speaker/output device to “Communications”.
-- In Settings → Audio, choose Source: PerApp and System Device: Communications.
-- Use the “Test” buttons to verify levels before starting.
-- The app uses Windows audio session meters to prefer audio from the selected app’s process during loopback capture. Other system sounds are largely ignored when the meeting app is active.
+---
 
-Windows 11 Per-Window Capture
-- A per-window audio capture path is experimental and feature-detected. The app automatically falls back to session-gated loopback when unsupported. In practice, PerApp + Communications device isolation yields reliable results.
+## Features
 
- Silero VAD Setup
- - Download `silero_vad.onnx` and place it at `models/silero_vad.onnx` (create the folder next to the EXE).
- - Example script:
-   `powershell -Command "New-Item -ItemType Directory -Force models; Invoke-WebRequest -Uri https://github.com/snakers4/silero-vad/raw/master/files/silero_vad.onnx -OutFile models/silero_vad.onnx"`
- - Enable Silero in Settings → “Enable Silero VAD”, then set:
-   - Window: 30 ms (common default; try 20–40 ms)
-   - Threshold: 0.50–0.60 (speech probability)
- - Tips:
-   - Increase Threshold if you get false positives (background noise).
-   - Decrease Threshold if speech is clipped too often.
-   - Silero uses small incremental windows; larger windows increase stability but may add latency.
+- **Audio Capture**
+  - Per-app/System/Mic capture via NAudio; per-app picker shows processes and activity levels.
+  - Adjustable VAD (energy or Silero ONNX). Optional `models/silero_vad.onnx` for tighter gating.
+  - Offline spooler stores WAV chunks if ASR fails and replays later.
 
-Roadmap
-- Voice output, per-company prompt presets, improved PDF/DOCX parsing, story bank, rubric-based scoring view.
- - Investigate Windows 11 GraphicsCapture + MediaCapture for tighter per-window audio when supported (with fallback).
-UI Scrolling
-- Settings and coaching/answer panes are wrapped in scroll containers so options remain visible on smaller screens.
+- **Real-Time Answers**
+  - OpenAI GPT-4o-mini streaming by default; Ollama local LLM supported via Auto mode.
+  - Question classifier (definition, challenge, troubleshooting, command, etc.).
+  - Context retriever pulls the most relevant resume/JD snippets.
+  - Scenario + CLI library injects mini examples and ready commands (git, az, kubectl, terraform, etc.).
+  - Conversation-aware tone (concise/detailed) plus small-talk responder for greetings.
 
-Low-Latency Tips
-- Use Local providers: Faster‑Whisper (ASR) and Ollama (LLM) on a capable GPU.
-- Reduce `Chunk Size (ms)` in Settings (e.g., 400–600 ms) to send smaller ASR chunks.
-- Keep Silero Window moderate (20–40 ms); increase slightly if you hear choppy boundaries.
-- Keep Threshold ~0.50–0.60 initially; tune higher if noisy environments cause false triggers.
-- PerApp capture: set your meeting app to output to the Communications device and select that in the app for isolation.
+- **UI**
+  - Main window: start/stop capture, provider presets, live cue input, per-app picker, overlay toggle, cheat sheet/story panes.
+  - Overlay window: resizable, auto-scroll, can stay on a secondary monitor.
+  - Hotkeys: Alt+P (click-through overlay), Alt+C (copy answer), Alt+G (regenerate), Alt+S (pause).
+
+- **Storage & Logging**
+  - Settings stored under `%AppData%\InterviewCopilot`.
+  - API keys encrypted via DPAPI.
+  - Story Bank saves completed answers; searchable from Settings.
+  - Prompt logger writes `prompts.jsonl` so you can review question/prompt/answer pairs.
+
+---
+
+## Provider Modes
+
+- **Auto (Live Interview)**: If an OpenAI key is present, uses OpenAI LLM + OpenAI Whisper; otherwise switches to Ollama Faster-Whisper combo. Also applies low-latency VAD chunking.
+- Manual combos: OpenAI only, Local only, or hybrids. Switching providers reloads ASR/LLM services live.
+
+---
+
+## Per-App Capture Tips
+
+- Set Teams/Zoom/Meet output to “Communications”.
+- In Interview Copilot → Audio Source = PerApp, Device Preference = Communications.
+- Click **Per-App Picker** while audio is playing; select the relevant process. The picker scans all render endpoints and shows process + title + live level.
+
+---
+
+## Low-Latency Tips
+
+- Use Silero VAD with 20–40 ms windows, threshold ~0.5–0.6.
+- Reduce chunk size (400–500 ms) for faster ASR turnarounds.
+- For unreliable networks, use local providers (Ollama + Faster-Whisper).
+- Keep overlay on a second monitor to avoid screen-share leaks.
+
+---
+
+## Scripts
+
+- `scripts/publish-win.ps1` – Produces a self-contained single-file EXE under `dist/win-x64`.
+- `scripts/make-msix.ps1` – Optional MSIX packaging (requires Windows SDK).
+- `scripts/smoke.ps1` – CI smoke build + publish + artifact verification (Windows).
+
+---
+
+## Roadmap
+
+- Voice output routed to earpiece-only device.
+- Per-company prompt presets and rubric scoring.
+- Enhanced PDF parsing and story-bank analytics.
+- Windows GraphicsCapture integration for per-window audio when available.
+
+---
+
+For support: open an issue or ping the maintainer. Happy interviewing! 💼🧠💬
