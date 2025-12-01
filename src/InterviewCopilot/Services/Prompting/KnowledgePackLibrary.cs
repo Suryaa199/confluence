@@ -42,6 +42,13 @@ internal static class KnowledgePackLibrary
         })
     };
 
+    private static HashSet<string> EnabledPacks = Packs.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    public static void SetEnabledPacks(IEnumerable<string> names)
+    {
+        EnabledPacks = new HashSet<string>(names ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+    }
+
     public static IReadOnlyList<KnowledgePack> Match(string question, QuestionCategory category, int max = 2)
     {
         if (string.IsNullOrWhiteSpace(question)) return Array.Empty<KnowledgePack>();
@@ -49,6 +56,7 @@ internal static class KnowledgePackLibrary
         var list = new List<KnowledgePack>();
         foreach (var pack in Packs)
         {
+            if (!EnabledPacks.Contains(pack.Name)) continue;
             if (pack.Keywords.Any(k => lower.Contains(k)))
             {
                 list.Add(pack);

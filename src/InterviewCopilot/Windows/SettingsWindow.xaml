@@ -90,6 +90,15 @@
                 <TextBlock Text="Company Blurb" Margin="0,16,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="CompanyBox" AcceptsReturn="True" Height="100"/>
 
+                <TextBlock Text="Knowledge Packs" Margin="0,16,0,0" FontWeight="Bold"/>
+                <StackPanel>
+                    <CheckBox Content="AKS" x:Name="PackAks"/>
+                    <CheckBox Content="Terraform" x:Name="PackTerraform"/>
+                    <CheckBox Content="CI/CD" x:Name="PackCiCd"/>
+                    <CheckBox Content="Security" x:Name="PackSecurity"/>
+                    <CheckBox Content="Observability" x:Name="PackObservability"/>
+                </StackPanel>
+
                 <Button Content="Generate Cheat Sheet" Margin="0,16,0,0" Click="OnGenerateCheatSheet"/>
                 <TextBlock Text="Cheat Sheet" Margin="0,8,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="CheatBox" AcceptsReturn="True" Height="150"/>

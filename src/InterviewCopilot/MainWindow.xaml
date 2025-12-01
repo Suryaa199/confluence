@@ -132,6 +132,7 @@
                     <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsCheatView}" Command="{Binding ShowCheatCommand}" Content="Cheat Sheet"/>
                     <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsStoriesView}" Command="{Binding ShowStoriesCommand}" Content="Stories"/>
                     <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsSettingsView}" Command="{Binding ShowSettingsCommand}" Content="Settings"/>
+                    <ToggleButton Style="{StaticResource SidebarToggle}" IsChecked="{Binding IsTelemetryView}" Command="{Binding ShowTelemetryCommand}" Content="Telemetry"/>
                     <TextBlock Text="Hotkeys: Alt+P overlay, Alt+C copy, Alt+G regen, Alt+S pause" TextWrapping="Wrap" Margin="0,12,0,0"/>
                 </StackPanel>
             </Border>
@@ -290,6 +291,25 @@
                     <TextBlock Text="Settings" Style="{StaticResource Subtitle}"/>
                     <TextBlock Text="Open the Settings window to edit preferences." Margin="0,8,0,8"/>
                     <Button Content="Open Settings" Command="{Binding OpenSettingsCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Telemetry View -->
+            <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsTelemetryView, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="Session Telemetry" Style="{StaticResource Subtitle}"/>
+                    <ListView ItemsSource="{Binding TelemetryEntries}" Margin="0,8,0,0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Time" Width="140" DisplayMemberBinding="{Binding Timestamp}"/>
+                                <GridViewColumn Header="Category" Width="100" DisplayMemberBinding="{Binding Category}"/>
+                                <GridViewColumn Header="Persona" Width="80" DisplayMemberBinding="{Binding Persona}"/>
+                                <GridViewColumn Header="Words" Width="60" DisplayMemberBinding="{Binding WordCount}"/>
+                                <GridViewColumn Header="Retry" Width="60" DisplayMemberBinding="{Binding NeededRetry}"/>
+                                <GridViewColumn Header="Question" Width="200" DisplayMemberBinding="{Binding Question}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
                 </StackPanel>
             </Border>
         </Grid>

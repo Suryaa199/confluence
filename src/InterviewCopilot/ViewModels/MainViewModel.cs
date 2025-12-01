@@ -32,6 +32,7 @@ public class MainViewModel : INotifyPropertyChanged
     private bool _isCheatView;
     private bool _isStoriesView;
     private bool _isSettingsView;
+    private bool _isTelemetryView;
     private string _cheatSheetText = string.Empty;
     private double _peakLevel;
     private string _storyQuery = string.Empty;
@@ -82,6 +83,7 @@ public class MainViewModel : INotifyPropertyChanged
     public bool IsCheatView { get => _isCheatView; set { _isCheatView = value; OnPropertyChanged(); } }
     public bool IsStoriesView { get => _isStoriesView; set { _isStoriesView = value; OnPropertyChanged(); } }
     public bool IsSettingsView { get => _isSettingsView; set { _isSettingsView = value; OnPropertyChanged(); } }
+    public bool IsTelemetryView { get => _isTelemetryView; set { _isTelemetryView = value; OnPropertyChanged(); } }
     public double PeakLevel { get => _peakLevel; set { _peakLevel = value; OnPropertyChanged(); } }
     public string StoryQuery { get => _storyQuery; set { _storyQuery = value; OnPropertyChanged(); } }
     public int? StoryDaysFilter { get => _storyDaysFilter; set { _storyDaysFilter = value; OnPropertyChanged(); } }
@@ -118,6 +120,7 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand ShowCheatCommand { get; }
     public ICommand ShowStoriesCommand { get; }
     public ICommand ShowSettingsCommand { get; }
+    public ICommand ShowTelemetryCommand { get; }
     public ICommand StorySearchCommand { get; }
     public ICommand SetFilterCommand { get; }
     public ICommand ClearFilterCommand { get; }
@@ -129,6 +132,7 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand AutoConfigureCommand { get; }
     private string _openAiKeyInput = string.Empty;
     public ObservableCollection<string> StorySearchResults { get; } = new();
+    public ObservableCollection<TelemetryEntry> TelemetryEntries { get; } = new();
     public string CheatSheetText { get => _cheatSheetText; set { _cheatSheetText = value; OnPropertyChanged(); } }
     public string OpenAiKeyInput { get => _openAiKeyInput; set { _openAiKeyInput = value; OnPropertyChanged(); } }
     public ObservableCollection<string> ProviderProfiles { get; } = new(new[] { "Auto (Live Interview)", "OpenAI Only", "Local Only", "Hybrid (Local LLM + OpenAI ASR)", "Hybrid (OpenAI LLM + Local ASR)", "Custom" });
@@ -168,6 +172,7 @@ public class MainViewModel : INotifyPropertyChanged
         ShowCheatCommand = new RelayCommand(_ => SetView("cheat"));
         ShowStoriesCommand = new RelayCommand(_ => SetView("stories"));
         ShowSettingsCommand = new RelayCommand(_ => SetView("settings"));
+        ShowTelemetryCommand = new RelayCommand(_ => SetView("telemetry"));
         StorySearchCommand = new RelayCommand(async _ => await StorySearchAsync());
         SetFilterCommand = new RelayCommand(async d => { if (d is string s && int.TryParse(s, out var days)) StoryDaysFilter = days; await StorySearchAsync(); });
         ClearFilterCommand = new RelayCommand(async _ => { StoryDaysFilter = null; await StorySearchAsync(); });
@@ -525,6 +530,26 @@ public class MainViewModel : INotifyPropertyChanged
             category,
             SelectedPersona,
             _lastAnswerNeededRetry);
+        TelemetryEntries.Insert(0, new TelemetryEntry
+        {
+            Question = question,
+            Category = category.ToString(),
+            Persona = SelectedPersona,
+            WordCount = string.IsNullOrWhiteSpace(LiveAnswer) ? 0 : LiveAnswer.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
+            NeededRetry = _lastAnswerNeededRetry,
+            Timestamp = DateTime.Now.ToString("HH:mm:ss")
+        });
+        if (TelemetryEntries.Count > 50) TelemetryEntries.RemoveAt(TelemetryEntries.Count - 1);
+    }
+
+    public class TelemetryEntry
+    {
+        public string Timestamp { get; set; } = string.Empty;
+        public string Question { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Persona { get; set; } = string.Empty;
+        public int WordCount { get; set; }
+        public bool NeededRetry { get; set; }
     }
 
     private void ApplyPreset(string preset)
@@ -743,6 +768,7 @@ public class MainViewModel : INotifyPropertyChanged
         IsCheatView = v == "cheat";
         IsStoriesView = v == "stories";
         IsSettingsView = v == "settings";
+        IsTelemetryView = v == "telemetry";
         if (IsCheatView) LoadCheatSheet();
         if (IsStoriesView) _ = StorySearchAsync();
     }
