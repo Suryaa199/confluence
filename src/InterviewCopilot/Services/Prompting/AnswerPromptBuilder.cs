@@ -9,6 +9,29 @@ public sealed class AnswerPromptBuilder
     private readonly QuestionClassifier _classifier = new();
     private readonly ContextRetriever _contextRetriever;
     private readonly ConversationState _state;
+    private const string FewShotExamples = """
+Example 1:
+Q: How do you secure AKS clusters for production?
+A:
+1. I wire RBAC to Azure AD groups so every action is least-privilege.
+2. I enforce NetworkPolicies + Trivy scanning + Pod Security to stop drift before deploys.
+3. I keep the API private, rotate Key Vault secrets, and alert on suspicious pods.
+Mini Example: Blocked OpenSSL CVE in 40 min by rebuilding images and rotating creds.
+CLI Example:
+kubectl get clusterrolebindings
+trivy image aifregistry.azurecr.io/api:latest
+
+Example 2:
+Q: Troubleshoot high latency on an AKS service.
+A:
+1. I check `kubectl top` + Azure Monitor to see if nodes or pods are saturated.
+2. I inspect ingress logs/HPA events to catch noisy neighbors or throttled replicas.
+3. I roll out a tuned deployment (canary or scale-up) and watch Prometheus p95 recover.
+Mini Example: Cut API latency from 420 ms→180 ms by right-sizing the canary pool.
+CLI Example:
+kubectl top pod -n prod
+kubectl describe hpa api -n prod
+""";
 
     public AnswerPromptBuilder(Settings settings, ConversationState state)
     {
@@ -81,6 +104,10 @@ public sealed class AnswerPromptBuilder
         {
             sb.AppendLine("ManualCue: " + cue);
         }
+
+        sb.AppendLine();
+        sb.AppendLine("Reference Format Samples:");
+        sb.AppendLine(FewShotExamples);
 
         return sb.ToString();
     }

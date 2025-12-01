@@ -59,6 +59,12 @@ public sealed class DefaultCoachingService : ICoachingService
 {
     private readonly ILlmService _llm;
     private readonly Prompting.PromptLogger _logger = new();
+    private static readonly IReadOnlyList<string> DefaultFollowUps = new[]
+    {
+        "Do you want me to double-click on the remediation steps?",
+        "Should I walk through how we monitored the rollout?",
+        "Want a CLI walkthrough of the tooling?"
+    };
     public DefaultCoachingService(ILlmService llm) { _llm = llm; }
 
     public async Task GenerateAsync(
@@ -100,6 +106,10 @@ public sealed class DefaultCoachingService : ICoachingService
         catch
         {
             // If follow-up generation fails, surface empty list so UX can continue.
+        }
+        if (followUps is null || followUps.Count == 0)
+        {
+            followUps = DefaultFollowUps;
         }
         onFollowUps?.Invoke(followUps);
     }

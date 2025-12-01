@@ -156,6 +156,7 @@ public class MainViewModel : INotifyPropertyChanged
         {
             if (p is string f && !string.IsNullOrWhiteSpace(f))
             {
+                FollowUpPredictor.RecordSelection(f);
                 LiveQuestion = (LiveQuestion?.Length > 0 ? LiveQuestion + " " : string.Empty) + f;
                 await RegenerateAsync();
             }
@@ -223,6 +224,7 @@ public class MainViewModel : INotifyPropertyChanged
         _orchestrator.OnTranscript += text =>
         {
             LiveQuestion += (LiveQuestion.Length > 0 ? " " : "") + text;
+            UpdatePredictedFollowUps();
         };
         _orchestrator.OnAnswerToken += tok =>
         {
@@ -235,10 +237,11 @@ public class MainViewModel : INotifyPropertyChanged
         };
         _orchestrator.OnFollowUps += list =>
         {
+            var combined = BuildFollowUps(list);
             App.Current.Dispatcher.Invoke(() =>
             {
                 FollowUps.Clear();
-                foreach (var f in list) FollowUps.Add(f);
+                foreach (var f in combined) FollowUps.Add(f);
                 // Save story when follow-ups arrive (answer considered complete)
                 _ = Services.AppServices.Stories.SaveAsync(LiveQuestion, LiveAnswer, DateTimeOffset.Now);
                 if (SpeakAnswersEnabled)
@@ -375,6 +378,39 @@ public class MainViewModel : INotifyPropertyChanged
     public ObservableCollection<string> Presets { get; } = new(new[] { "Cloud", "Local Low-Latency", "Safe" });
     private string? _selectedPreset;
     public string? SelectedPreset { get => _selectedPreset; set { _selectedPreset = value; OnPropertyChanged(); if (!string.IsNullOrEmpty(value)) ApplyPreset(value); } }
+
+    private void UpdatePredictedFollowUps()
+    {
+        var suggestions = FollowUpPredictor.Predict(LiveQuestion);
+        App.Current.Dispatcher.Invoke(() =>
+        {
+            FollowUps.Clear();
+            foreach (var s in suggestions) FollowUps.Add(s);
+        });
+    }
+
+    private IReadOnlyList<string> BuildFollowUps(IReadOnlyList<string>? modelList)
+    {
+        var list = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void AddItems(IEnumerable<string> items)
+        {
+            foreach (var item in items)
+            {
+                if (string.IsNullOrWhiteSpace(item)) continue;
+                if (seen.Add(item))
+                {
+                    list.Add(item);
+                    if (list.Count >= 5) return;
+                }
+            }
+        }
+
+        AddItems(FollowUpPredictor.Predict(LiveQuestion));
+        if (modelList is not null) AddItems(modelList);
+        return list;
+    }
 
     private void ApplyPreset(string preset)
     {
