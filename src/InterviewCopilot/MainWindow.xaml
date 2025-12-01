@@ -272,7 +272,7 @@
                 <StackPanel>
                     <TextBlock Text="Stories" Style="{StaticResource Subtitle}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
-                        <TextBox MinWidth="220" Text="{Binding StoryQuery, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Style="{StaticResource {x:Type TextBox}}" MinWidth="220" Text="{Binding StoryQuery, UpdateSourceTrigger=PropertyChanged}"/>
                         <Button Content="Search" Command="{Binding StorySearchCommand}"/>
                         <Button Content="Today" Command="{Binding SetFilterCommand}" CommandParameter="0" Margin="8,0,0,0"/>
                         <Button Content="7d" Command="{Binding SetFilterCommand}" CommandParameter="7"/>
