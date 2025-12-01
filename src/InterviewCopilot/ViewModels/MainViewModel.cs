@@ -357,6 +357,14 @@ public class MainViewModel : INotifyPropertyChanged
             await Services.AppServices.Audio.StartAsync(options);
             await Task.Delay(3000);
         }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                "Could not start audio capture for level test:\n" + ex.Message,
+                "Audio Levels",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        }
         finally
         {
             await Services.AppServices.Audio.StopAsync();

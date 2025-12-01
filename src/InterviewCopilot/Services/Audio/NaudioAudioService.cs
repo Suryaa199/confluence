@@ -90,10 +90,17 @@ public sealed class NaudioAudioService : IAudioService
             device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, role);
         }
         _renderDevice = device;
-        _loopback = new WasapiLoopbackCapture(device);
-        _loopback.DataAvailable += OnData;
-        _loopback.RecordingStopped += (s, e) => { };
-        _loopback.StartRecording();
+        try
+        {
+            _loopback = new WasapiLoopbackCapture(device);
+            _loopback.DataAvailable += OnData;
+            _loopback.RecordingStopped += (s, e) => { };
+            _loopback.StartRecording();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Unable to start system audio capture. Verify an output device is available.", ex);
+        }
     }
 
     private void StartMicrophone(DevicePreference devicePref, string? endpointId)
@@ -109,9 +116,16 @@ public sealed class NaudioAudioService : IAudioService
             var role = devicePref == DevicePreference.Communications ? Role.Communications : Role.Multimedia;
             device = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, role);
         }
-        _mic = new WasapiCapture(device);
-        _mic.DataAvailable += OnData;
-        _mic.StartRecording();
+        try
+        {
+            _mic = new WasapiCapture(device);
+            _mic.DataAvailable += OnData;
+            _mic.StartRecording();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Unable to activate the selected microphone. Check audio permissions and default devices.", ex);
+        }
     }
 
     private readonly byte[] _work = Array.Empty<byte>();
