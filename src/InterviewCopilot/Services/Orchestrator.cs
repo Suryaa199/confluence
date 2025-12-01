@@ -14,6 +14,7 @@ public sealed class Orchestrator : IDisposable
     private readonly IOfflineSpooler _spooler;
     private readonly Settings _settings;
     private readonly AnswerPromptBuilder _promptBuilder;
+    private readonly SmallTalkResponder _smallTalkResponder = new();
 
     private CancellationTokenSource? _cts;
     private readonly List<float> _currentBuffer = new();
@@ -122,6 +123,11 @@ public sealed class Orchestrator : IDisposable
     private void HandleTranscript(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
+        if (_smallTalkResponder.TryRespond(text, OnAnswerToken))
+        {
+            OnTranscript?.Invoke(text);
+            return;
+        }
         lock (_lock)
         {
             _agg.Append(_agg.Length > 0 ? " " : string.Empty);
