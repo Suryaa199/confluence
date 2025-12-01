@@ -47,6 +47,7 @@ public class MainViewModel : INotifyPropertyChanged
     private string _keyStatusMessage = "OpenAI key not saved.";
     private string _selectedProviderProfile = "OpenAI Only";
     private bool _suppressProviderProfileSync;
+    private bool _autoRetryInFlight;
 
     public string LiveQuestion { get => _liveQuestion; set { _liveQuestion = value; OnPropertyChanged(); } }
     public string LiveAnswer { get => _liveAnswer; set { _liveAnswer = value; OnPropertyChanged(); } }
@@ -240,6 +241,8 @@ public class MainViewModel : INotifyPropertyChanged
             var combined = BuildFollowUps(list);
             App.Current.Dispatcher.Invoke(() =>
             {
+                LiveAnswer = Services.Prompting.AnswerPolisher.Polish(LiveAnswer);
+                _overlay?.SetAnswer(LiveAnswer);
                 FollowUps.Clear();
                 foreach (var f in combined) FollowUps.Add(f);
                 // Save story when follow-ups arrive (answer considered complete)
@@ -250,6 +253,7 @@ public class MainViewModel : INotifyPropertyChanged
                 }
                 IsAnswerStreaming = false;
             });
+            _ = MaybeAutoRegenerateAsync();
         };
         _orchestrator.OnAsrError += msg => AsrStatus = "Error: " + msg;
         _orchestrator.OnLlmError += msg => LlmStatus = "Error: " + msg;
@@ -333,6 +337,7 @@ public class MainViewModel : INotifyPropertyChanged
     private async Task RegenerateAsync()
     {
         var q = string.IsNullOrWhiteSpace(LiveQuestion) ? "Give a concise summary of my strengths." : LiveQuestion;
+        q = Services.Prompting.QuestionIntentRebuilder.Rebuild(q);
         var builder = new AnswerPromptBuilder(Services.AppServices.LoadSettings(), ConversationState.Instance);
         var prompt = builder.Build(q);
         LiveAnswer = string.Empty;
@@ -410,6 +415,22 @@ public class MainViewModel : INotifyPropertyChanged
         AddItems(FollowUpPredictor.Predict(LiveQuestion));
         if (modelList is not null) AddItems(modelList);
         return list;
+    }
+
+    private async Task MaybeAutoRegenerateAsync()
+    {
+        if (_autoRetryInFlight) return;
+        if (string.IsNullOrWhiteSpace(LiveAnswer)) return;
+        if (!Services.Prompting.AnswerEvaluator.NeedsRetry(LiveAnswer)) return;
+        _autoRetryInFlight = true;
+        try
+        {
+            await RegenerateAsync();
+        }
+        finally
+        {
+            _autoRetryInFlight = false;
+        }
     }
 
     private void ApplyPreset(string preset)

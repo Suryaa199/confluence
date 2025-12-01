@@ -166,6 +166,7 @@ public sealed class Orchestrator : IDisposable
             question = _agg.ToString();
         }
         question = TakeRecentQuestion(question);
+        question = Prompting.QuestionIntentRebuilder.Rebuild(question);
         await Task.Delay(1200);
         lock (_lock)
         {

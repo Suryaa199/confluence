@@ -13,7 +13,7 @@ public static class FollowUpPredictor
         (new[] { "secure aks", "aks security", "kubernetes security", "hardening", "rbac", "aad", "pod security", "network policy" },
             new[]
             {
-                "Can you compare RBAC roles versus Azure AD groups?",
+                "Deep-dive security controls?",
                 "How do you secure container images before they hit AKS?",
                 "What about Pod Security/Network Policies?"
             }),
@@ -22,14 +22,14 @@ public static class FollowUpPredictor
             {
                 "How do you debug failing pods or ingress routing?",
                 "What’s your rollout/canary strategy?",
-                "How do you observe cluster health/endpoints?"
+                "Failover / DR strategy?"
             }),
         (new[] { "ci/cd", "pipeline", "devops", "github actions", "azure devops", "workflow" },
             new[]
             {
+                "CI/CD versioning approach?",
                 "How are secrets handled across environments?",
-                "What tests or gates block a bad deploy?",
-                "How do you roll back quickly if prod fails?"
+                "What tests or gates block a bad deploy?"
             }),
         (new[] { "terraform", "iac", "infrastructure as code", "bicep", "pulumi" },
             new[]
@@ -41,24 +41,26 @@ public static class FollowUpPredictor
         (new[] { "monitor", "observability", "prometheus", "grafana", "logs", "alerts", "slo", "mttr" },
             new[]
             {
+                "Monitoring and alerting detail?",
                 "Which SLO/SLA metrics do you track?",
-                "How do you trace issues end-to-end?",
-                "What’s your on-call/alert routing setup?"
+                "How do you trace issues end-to-end?"
             }),
         (new[] { "cost", "optimization", "spot", "autoscale", "rightsizing" },
             new[]
             {
+                "Cost optimization tactics?",
                 "How do you forecast spend before changes?",
-                "What knobs do you tune (nodes vs pods)?",
-                "How do you prove savings to finance?"
+                "What knobs do you tune (nodes vs pods)?"
             })
     };
 
     private static readonly string[] GeneralFallback = new[]
     {
-        "Do you want me to double-click on remediation steps?",
-        "Should I walk through how we monitored the rollout?",
-        "Want a CLI walkthrough of the tooling?"
+        "Deep-dive security controls?",
+        "Failover / DR strategy?",
+        "CI/CD versioning approach?",
+        "Cost optimization tactics?",
+        "Monitoring and alerting detail?"
     };
 
     private static readonly string StatsPath = Path.Combine(
