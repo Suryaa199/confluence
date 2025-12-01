@@ -126,12 +126,20 @@ public static class TranscriptPreprocessor
     {
         if (string.IsNullOrWhiteSpace(question)) return QuestionCategory.Noise;
         var lower = question.ToLowerInvariant();
-        if (GreetingTokens.Any(lower.Contains)) return QuestionCategory.Greeting;
-        if (BehavioralTokens.Any(lower.Contains)) return QuestionCategory.Behavioral;
-        if (ArchitectureTokens.Any(lower.Contains)) return QuestionCategory.Architecture;
-        if (TroubleshootTokens.Any(lower.Contains)) return QuestionCategory.Troubleshooting;
-        if (SecurityTokens.Any(lower.Contains)) return QuestionCategory.Security;
+        if (GreetingTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Greeting;
+        if (BehavioralTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Behavioral;
+        if (ArchitectureTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Architecture;
+        if (TroubleshootTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Troubleshooting;
+        if (SecurityTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Security;
         if (lower.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length < 3) return QuestionCategory.Noise;
         return QuestionCategory.Technical;
+    }
+
+    private static bool ContainsToken(string text, string token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return false;
+        if (token.Contains(' ')) return text.Contains(token);
+        var padded = " " + text + " ";
+        return padded.Contains(" " + token + " ");
     }
 }
