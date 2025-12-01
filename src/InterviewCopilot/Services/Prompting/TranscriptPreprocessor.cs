@@ -57,7 +57,7 @@ public static class TranscriptPreprocessor
         result = Regex.Replace(result, @"\b(uh|um|hmm|erm|please)\b", " ", RegexOptions.IgnoreCase);
         result = Regex.Replace(result, @"\b(you)\s+(you)\b", "you", RegexOptions.IgnoreCase);
         result = Regex.Replace(result, @"\b(\w+)(\s+\1\b)+", "$1", RegexOptions.IgnoreCase);
-        result = Regex.Replace(result, "\s+", " ");
+        result = Regex.Replace(result, @"\s+", " ");
         return result.Trim();
     }
 
