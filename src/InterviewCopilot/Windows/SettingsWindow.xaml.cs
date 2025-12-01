@@ -174,8 +174,8 @@ public partial class SettingsWindow : Window
     private async void OnGenerateCheatSheet(object sender, RoutedEventArgs e)
     {
         var s = _settings.Load();
-        var builder = new AnswerPromptBuilder(s);
-        var prompt = builder.Build("Generate a concise company-role cheat sheet with bullet points and key talking points.");
+        var builder = new AnswerPromptBuilder(s, ConversationState.Instance);
+        var prompt = builder.Build("Generate a concise company-role cheat sheet with bullet points and key talking points.", consumeCue: false);
         CheatBox.Text = "Generating cheat sheet...";
         try
         {

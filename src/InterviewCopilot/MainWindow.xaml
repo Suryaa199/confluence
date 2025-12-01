@@ -77,6 +77,15 @@
                             <TextBlock Text="Session Hint" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}" ToolTip="Helps prioritize the meeting app process"/>
                         </StackPanel>
+                        <StackPanel MinWidth="220" Margin="0,0,12,12">
+                            <TextBlock Text="Live Cue (next answer)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Width="160"
+                                         Text="{Binding LiveCueText, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="Short hint to mention in the next response"/>
+                                <Button Content="Inject" Command="{Binding ApplyLiveCueCommand}" Margin="6,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
                         <ToggleButton Content="Coach Audio"
                                       Margin="0,0,12,12"
                                       Command="{Binding ToggleSpeakAnswersCommand}"

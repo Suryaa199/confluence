@@ -42,6 +42,7 @@ public class MainViewModel : INotifyPropertyChanged
     private bool _speakAnswersEnabled;
     private readonly HttpClient _httpClient = new();
     private readonly PromptLogger _promptLogger = new();
+    private string _liveCueText = string.Empty;
     private bool _isTestingKey;
     private string _keyStatusMessage = "OpenAI key not saved.";
     private string _selectedProviderProfile = "OpenAI Only";
@@ -121,6 +122,7 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand CopyTranscriptCommand { get; }
     public ICommand ToggleSpeakAnswersCommand { get; }
     public ICommand TestKeyCommand { get; }
+    public ICommand ApplyLiveCueCommand { get; }
     public ICommand AutoConfigureCommand { get; }
     private string _openAiKeyInput = string.Empty;
     public ObservableCollection<string> StorySearchResults { get; } = new();
@@ -128,6 +130,7 @@ public class MainViewModel : INotifyPropertyChanged
     public string OpenAiKeyInput { get => _openAiKeyInput; set { _openAiKeyInput = value; OnPropertyChanged(); } }
     public ObservableCollection<string> ProviderProfiles { get; } = new(new[] { "Auto (Live Interview)", "OpenAI Only", "Local Only", "Hybrid (Local LLM + OpenAI ASR)", "Hybrid (OpenAI LLM + Local ASR)", "Custom" });
     public string SelectedProviderProfile { get => _selectedProviderProfile; set { if (_selectedProviderProfile != value) { _selectedProviderProfile = value; OnPropertyChanged(); ApplyProviderProfile(value); } } }
+    public string LiveCueText { get => _liveCueText; set { _liveCueText = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
 
     public MainViewModel()
     {
@@ -161,6 +164,7 @@ public class MainViewModel : INotifyPropertyChanged
         ToggleSpeakAnswersCommand = new RelayCommand(p => ToggleSpeakAnswers(p));
         TestKeyCommand = new RelayCommand(async _ => await TestKeyAsync());
         AutoConfigureCommand = new RelayCommand(_ => AutoConfigure());
+        ApplyLiveCueCommand = new RelayCommand(_ => ApplyLiveCue(), _ => !string.IsNullOrWhiteSpace(LiveCueText));
         RefreshEndpoints();
         RefreshStatus();
         SetView("interview");
@@ -326,7 +330,7 @@ public class MainViewModel : INotifyPropertyChanged
     private async Task RegenerateAsync()
     {
         var q = string.IsNullOrWhiteSpace(LiveQuestion) ? "Give a concise summary of my strengths." : LiveQuestion;
-        var builder = new AnswerPromptBuilder(Services.AppServices.LoadSettings());
+        var builder = new AnswerPromptBuilder(Services.AppServices.LoadSettings(), ConversationState.Instance);
         var prompt = builder.Build(q);
         LiveAnswer = string.Empty;
         lock (_answerBuffer) _answerBuffer.Clear();
@@ -422,6 +426,12 @@ public class MainViewModel : INotifyPropertyChanged
         }
         store.Save(s);
         SpeakAnswersEnabled = s.SpeakAnswers;
+    }
+
+    private void ApplyLiveCue()
+    {
+        ConversationState.Instance.SetLiveCue(LiveCueText);
+        LiveCueText = string.Empty;
     }
 
     private void AutoConfigure()

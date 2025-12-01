@@ -8,14 +8,16 @@ public sealed class AnswerPromptBuilder
     private readonly Settings _settings;
     private readonly QuestionClassifier _classifier = new();
     private readonly ContextRetriever _contextRetriever;
+    private readonly ConversationState _state;
 
-    public AnswerPromptBuilder(Settings settings)
+    public AnswerPromptBuilder(Settings settings, ConversationState state)
     {
         _settings = settings;
+        _state = state;
         _contextRetriever = new ContextRetriever(settings);
     }
 
-    public LlmPrompt Build(string question)
+    public LlmPrompt Build(string question, bool consumeCue = true)
     {
         var profile = _classifier.Classify(question);
         var (maxSnippets, minScore) = profile switch
@@ -27,8 +29,8 @@ public sealed class AnswerPromptBuilder
         var snippets = _contextRetriever.GetTopSnippets(question, maxSnippets, minScore);
         var scenario = ScenarioLibrary.MatchScenario(question, snippets);
 
-        var context = ComposeContext(snippets, scenario, profile);
-        var systemInstruction = PromptTemplates.GetSystemInstruction(profile);
+        var context = ComposeContext(snippets, scenario, profile, consumeCue);
+        var systemInstruction = PromptTemplates.GetSystemInstruction(profile, _state.Tone);
         if (!string.IsNullOrWhiteSpace(scenario.Topic))
         {
             systemInstruction += $" Highlight tooling around {scenario.Topic} when helpful.";
@@ -37,7 +39,7 @@ public sealed class AnswerPromptBuilder
         return new LlmPrompt(question, context, systemInstruction);
     }
 
-    private string ComposeContext(IReadOnlyList<ContextSnippet> snippets, ScenarioEntry scenario, QuestionType type)
+    private string ComposeContext(IReadOnlyList<ContextSnippet> snippets, ScenarioEntry scenario, QuestionType type, bool consumeCue)
     {
         var sb = new StringBuilder();
         sb.AppendLine("Candidate: Surya — DevSecOps Engineer building AI Force at HCL.");
@@ -73,6 +75,11 @@ public sealed class AnswerPromptBuilder
         if (!string.IsNullOrWhiteSpace(scenario.CliExamples))
         {
             sb.AppendLine("CLIHints: " + scenario.CliExamples);
+        }
+        var cue = consumeCue ? _state.ConsumeLiveCue() : _state.PeekLiveCue();
+        if (!string.IsNullOrWhiteSpace(cue))
+        {
+            sb.AppendLine("ManualCue: " + cue);
         }
 
         return sb.ToString();

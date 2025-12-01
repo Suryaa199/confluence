@@ -15,6 +15,7 @@ public sealed class Orchestrator : IDisposable
     private readonly Settings _settings;
     private readonly AnswerPromptBuilder _promptBuilder;
     private readonly SmallTalkResponder _smallTalkResponder = new();
+    private readonly ConversationHintEngine _hintEngine = new();
 
     private CancellationTokenSource? _cts;
     private readonly List<float> _currentBuffer = new();
@@ -40,7 +41,7 @@ public sealed class Orchestrator : IDisposable
         _coach = coach;
         _spooler = spooler;
         _settings = settings;
-        _promptBuilder = new AnswerPromptBuilder(settings);
+        _promptBuilder = new AnswerPromptBuilder(settings, ConversationState.Instance);
         _vad.Configure(enabled: true, minVoiceMs: settings.VadMinVoiceMs, maxSilenceMs: settings.VadMaxSilenceMs);
         _audio.OnFrame += HandleFrame;
     }
@@ -128,6 +129,7 @@ public sealed class Orchestrator : IDisposable
             OnTranscript?.Invoke(text);
             return;
         }
+        _hintEngine.Analyze(text, OnAnswerToken);
         lock (_lock)
         {
             _agg.Append(_agg.Length > 0 ? " " : string.Empty);
