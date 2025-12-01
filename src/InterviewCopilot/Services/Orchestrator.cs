@@ -157,6 +157,7 @@ public sealed class Orchestrator : IDisposable
             startRev = _rev;
             question = _agg.ToString();
         }
+        question = TakeRecentQuestion(question);
         await Task.Delay(1200);
         lock (_lock)
         {
@@ -199,5 +200,24 @@ public sealed class Orchestrator : IDisposable
             }
         }
         return sb.ToString();
+    }
+
+    private static string TakeRecentQuestion(string text, int maxChars = 320)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var trimmed = text.Trim();
+        if (trimmed.Length <= maxChars) return trimmed;
+        var delimiters = new[] { '?', '.', '!' };
+        var last = trimmed.LastIndexOfAny(delimiters);
+        if (last >= 0)
+        {
+            var prev = trimmed.LastIndexOfAny(delimiters, Math.Max(0, last - maxChars));
+            if (prev >= 0 && last - prev > 1)
+            {
+                return trimmed.Substring(prev + 1).Trim();
+            }
+            return trimmed.Substring(Math.Max(0, last - maxChars)).Trim();
+        }
+        return trimmed.Substring(trimmed.Length - maxChars).Trim();
     }
 }
