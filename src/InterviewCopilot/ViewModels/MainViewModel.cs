@@ -445,7 +445,7 @@ public class MainViewModel : INotifyPropertyChanged
         _overlay?.SetAnswer(LiveAnswer);
     }
 
-    public ObservableCollection<string> Presets { get; } = new(new[] { "Cloud", "Local Low-Latency", "Safe" });
+    public ObservableCollection<string> Presets { get; } = new(new[] { "Cloud", "Local Low-Latency", "Safe", "Accents+Whisper" });
     private string? _selectedPreset;
     public string? SelectedPreset { get => _selectedPreset; set { _selectedPreset = value; OnPropertyChanged(); if (!string.IsNullOrEmpty(value)) ApplyPreset(value); } }
 
@@ -588,6 +588,17 @@ public class MainViewModel : INotifyPropertyChanged
                 s.EnableSileroVad = true;
                 s.SileroWindowMs = 40;
                 s.SileroThreshold = 0.6f;
+                break;
+            case "Accents+Whisper":
+                s.LlmProvider = "OpenAI";
+                s.AsrProvider = "OpenAI";
+                s.ChunkSizeMs = 400;
+                s.EnableSileroVad = true;
+                s.SileroWindowMs = 25;
+                s.SileroThreshold = 0.52f;
+                s.VadMinVoiceMs = 120;
+                s.VadMaxSilenceMs = 500;
+                s.AsrModel = "whisper-1";
                 break;
         }
         new Services.JsonSettingsStore().Save(s);
