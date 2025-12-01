@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -55,6 +56,7 @@ public partial class SettingsWindow : Window
         OllamaModelBox.Text = s.OllamaModel;
         FwUrlBox.Text = s.FasterWhisperUrl;
         FwModelBox.Text = s.FasterWhisperModel;
+        SetPackCheckboxes(s.EnabledKnowledgePacks);
     }
 
     private void OnSave(object sender, RoutedEventArgs e)
@@ -84,6 +86,8 @@ public partial class SettingsWindow : Window
         s.OllamaModel = OllamaModelBox.Text ?? s.OllamaModel;
         s.FasterWhisperUrl = FwUrlBox.Text ?? s.FasterWhisperUrl;
         s.FasterWhisperModel = FwModelBox.Text ?? s.FasterWhisperModel;
+        s.EnabledKnowledgePacks = GetEnabledPacks();
+        KnowledgePackLibrary.SetEnabledPacks(s.EnabledKnowledgePacks ?? Array.Empty<string>());
         _settings.Save(s);
         // Reload VAD/TTS/clients so changes take effect next start
         InterviewCopilot.Services.AppServices.ReloadAiClients();
@@ -221,5 +225,27 @@ public partial class SettingsWindow : Window
     {
         if (TestKeyButton is null) return;
         TestKeyButton.IsEnabled = !isBusy && !string.IsNullOrWhiteSpace(_pendingApiKey);
+    }
+
+    private void SetPackCheckboxes(string[]? packs)
+    {
+        var defaultPacks = new[] { "AKS", "Terraform", "CI/CD", "Security", "Observability" };
+        var set = new HashSet<string>(packs ?? defaultPacks, StringComparer.OrdinalIgnoreCase);
+        PackAks.IsChecked = set.Contains("AKS");
+        PackTerraform.IsChecked = set.Contains("Terraform");
+        PackCiCd.IsChecked = set.Contains("CI/CD");
+        PackSecurity.IsChecked = set.Contains("Security");
+        PackObservability.IsChecked = set.Contains("Observability");
+    }
+
+    private string[] GetEnabledPacks()
+    {
+        var list = new List<string>();
+        if (PackAks.IsChecked == true) list.Add("AKS");
+        if (PackTerraform.IsChecked == true) list.Add("Terraform");
+        if (PackCiCd.IsChecked == true) list.Add("CI/CD");
+        if (PackSecurity.IsChecked == true) list.Add("Security");
+        if (PackObservability.IsChecked == true) list.Add("Observability");
+        return list.Count == 0 ? new[] { "AKS" } : list.ToArray();
     }
 }

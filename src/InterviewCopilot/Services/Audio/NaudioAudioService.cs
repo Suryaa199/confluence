@@ -53,6 +53,7 @@ public sealed class NaudioAudioService : IAudioService
         lock (_gate)
         {
             IsCapturing = false;
+            _silenceRaised = false;
             _monCts?.Cancel();
             _monCts?.Dispose();
             _monCts = null;
@@ -130,6 +131,8 @@ public sealed class NaudioAudioService : IAudioService
 
     private readonly byte[] _work = Array.Empty<byte>();
 
+    private bool _silenceRaised;
+
     private void OnData(object? sender, WaveInEventArgs e)
     {
         if (!IsCapturing) return;
@@ -146,7 +149,15 @@ public sealed class NaudioAudioService : IAudioService
         OnLevel?.Invoke(normalized);
         if (normalized < 0.02)
         {
-            OnSilenceDetected?.Invoke();
+            if (!_silenceRaised)
+            {
+                _silenceRaised = true;
+                OnSilenceDetected?.Invoke();
+            }
+        }
+        else if (normalized > 0.05)
+        {
+            _silenceRaised = false;
         }
         // Session gating (PerApp only) while still allowing short post-activity tails
         if (_options?.Source == AudioSourceKind.PerApp)

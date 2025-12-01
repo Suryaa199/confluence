@@ -1,4 +1,5 @@
 using InterviewCopilot.Models;
+using InterviewCopilot.Services.Prompting;
 
 namespace InterviewCopilot.Services;
 
@@ -23,7 +24,12 @@ public static class AppServices
     public static IStoryRepository Stories { get; } = new FileStoryRepository();
     public static ITtsService Tts { get; private set; } = CreateTts();
 
-    public static Settings LoadSettings() => SettingsStore.Load();
+    public static Settings LoadSettings()
+    {
+        var s = SettingsStore.Load();
+        KnowledgePackLibrary.SetEnabledPacks(s.EnabledKnowledgePacks ?? Array.Empty<string>());
+        return s;
+    }
 
     public static bool HasOpenAiKey() => GetOpenAiKeySource() != OpenAiKeySource.None;
 

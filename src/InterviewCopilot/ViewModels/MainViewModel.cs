@@ -507,9 +507,12 @@ public class MainViewModel : INotifyPropertyChanged
 
     private void OnSpeechInterruption()
     {
-        LiveAnswer = string.Empty;
-        _overlay?.SetAnswer(string.Empty);
-        _answerStreamStarted = false;
+        App.Current?.Dispatcher.Invoke(() =>
+        {
+            LiveAnswer = string.Empty;
+            _overlay?.SetAnswer(string.Empty);
+            _answerStreamStarted = false;
+        });
     }
 
     private string AppendDurationHint(string answer)

@@ -18,6 +18,7 @@ public class Settings
     public string? PreferredProcessName { get; set; }
     public bool SpeakAnswers { get; set; } = false;
     public bool TtsUseCommunications { get; set; } = true;
+    public string[]? EnabledKnowledgePacks { get; set; }
 
     // Providers
     public string LlmProvider { get; set; } = "OpenAI"; // OpenAI | Ollama

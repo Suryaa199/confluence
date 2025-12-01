@@ -47,7 +47,7 @@ public sealed class Orchestrator : IDisposable
         _promptBuilder = new AnswerPromptBuilder(settings, ConversationState.Instance);
         _vad.Configure(enabled: true, minVoiceMs: settings.VadMinVoiceMs, maxSilenceMs: settings.VadMaxSilenceMs);
         _audio.OnFrame += HandleFrame;
-        _audio.OnLevel += _ => { };
+        _audio.OnLevel += HandleAudioLevel;
         if (_audio is Audio.NaudioAudioService naudio)
         {
             naudio.OnSilenceDetected += HandleSilence;
@@ -234,7 +234,7 @@ public sealed class Orchestrator : IDisposable
     public void Dispose()
     {
         _audio.OnFrame -= HandleFrame;
-        _audio.OnLevel -= _ => { };
+        _audio.OnLevel -= HandleAudioLevel;
         if (_audio is Audio.NaudioAudioService naudio)
         {
             naudio.OnSilenceDetected -= HandleSilence;
@@ -247,6 +247,11 @@ public sealed class Orchestrator : IDisposable
     private void HandleSilence()
     {
         OnSpeechInterruption?.Invoke();
+    }
+
+    private void HandleAudioLevel(double level)
+    {
+        OnNoiseLevel?.Invoke(level);
     }
 
     private static string FilterToEnglish(string input)
