@@ -2,7 +2,7 @@ namespace InterviewCopilot.Services.Prompting;
 
 public static class PromptTemplates
 {
-    public static string GetSystemInstruction(QuestionType type, PromptTone tone)
+    public static string GetSystemInstruction(QuestionType type, PromptTone tone, QuestionCategory category)
     {
         var baseInstruction =
             "You are an interview copilot for a senior DevOps/DevSecOps engineer with 6+ years experience. " +
@@ -30,6 +30,15 @@ public static class PromptTemplates
             _ => "General: each bullet = tool + action + metric."
         };
 
-        return $"{baseInstruction} {toneInstruction} {specialization}".Trim();
+        var categoryInstruction = category switch
+        {
+            QuestionCategory.Behavioral => "Use STAR mindset: S, A, R compressed into the three bullets.",
+            QuestionCategory.Architecture => "If architecture, mention components flow and optional ASCII arrow diagram (max 2 lines).",
+            QuestionCategory.Troubleshooting => "Troubleshooting answers must show Check → Validate → Fix path.",
+            QuestionCategory.Security => "Security answers must cite identity, network, scanning, monitoring in order.",
+            _ => string.Empty
+        };
+
+        return $"{baseInstruction} {toneInstruction} {specialization} {categoryInstruction}".Trim();
     }
 }

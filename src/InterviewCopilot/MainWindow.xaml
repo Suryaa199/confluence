@@ -24,7 +24,7 @@
                         <TextBlock Text="{Binding ApiStatus}" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Right">
-                        <TextBox Width="260"
+                        <TextBox Style="{StaticResource {x:Type TextBox}}" Width="260"
                                  MinWidth="220"
                                  Margin="0,0,8,0"
                                  TextWrapping="NoWrap"
@@ -43,19 +43,19 @@
                     <WrapPanel>
                         <StackPanel MinWidth="170" Margin="0,0,12,12">
                             <TextBlock Text="Provider Mode" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding ProviderProfiles}" SelectedItem="{Binding SelectedProviderProfile}"/>
+                            <ComboBox Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding ProviderProfiles}" SelectedItem="{Binding SelectedProviderProfile}"/>
                         </StackPanel>
                         <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="LLM Provider" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding LlmProviders}" SelectedItem="{Binding SelectedLlmProvider}"/>
+                            <ComboBox Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding LlmProviders}" SelectedItem="{Binding SelectedLlmProvider}"/>
                         </StackPanel>
                         <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="ASR Provider" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding AsrProviders}" SelectedItem="{Binding SelectedAsrProvider}"/>
+                            <ComboBox Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding AsrProviders}" SelectedItem="{Binding SelectedAsrProvider}"/>
                         </StackPanel>
                         <StackPanel MinWidth="160" Margin="0,0,12,12">
                             <TextBlock Text="Quick Preset" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox SelectedValuePath="Content" SelectedValue="{Binding SelectedPreset}">
+                            <ComboBox Style="{StaticResource {x:Type ComboBox}}" SelectedValuePath="Content" SelectedValue="{Binding SelectedPreset}">
                                 <ComboBoxItem Content="Cloud"/>
                                 <ComboBoxItem Content="Local Low-Latency"/>
                                 <ComboBoxItem Content="Safe"/>
@@ -63,30 +63,30 @@
                         </StackPanel>
                         <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="Audio Source" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}" ToolTip="Audio Source (PerApp/System/Microphone)"/>
+                            <ComboBox Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding AudioSources}" SelectedItem="{Binding SelectedAudioSource}" ToolTip="Audio Source (PerApp/System/Microphone)"/>
                         </StackPanel>
                         <StackPanel MinWidth="230" Margin="0,0,12,12">
                             <TextBlock Text="Audio Endpoint" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name" ToolTip="Audio Endpoint (Default/Communications or specific device)"/>
+                            <ComboBox Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding AudioEndpoints}" SelectedItem="{Binding SelectedAudioEndpoint}" DisplayMemberPath="Name" ToolTip="Audio Endpoint (Default/Communications or specific device)"/>
                         </StackPanel>
                         <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="Device Preference" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}" ToolTip="Device Preference (Default vs Communications)"/>
+                            <ComboBox Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding DevicePreferences}" SelectedItem="{Binding SelectedDevicePreference}" ToolTip="Device Preference (Default vs Communications)"/>
                         </StackPanel>
                         <StackPanel MinWidth="150" Margin="0,0,12,12">
                             <TextBlock Text="Session Hint" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                            <ComboBox ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}" ToolTip="Helps prioritize the meeting app process"/>
+                            <ComboBox Style="{StaticResource {x:Type ComboBox}}" ItemsSource="{Binding SessionHints}" SelectedItem="{Binding SelectedSessionHint}" ToolTip="Helps prioritize the meeting app process"/>
                         </StackPanel>
                         <StackPanel MinWidth="220" Margin="0,0,12,12">
                             <TextBlock Text="Live Cue (next answer)" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <StackPanel Orientation="Horizontal">
-                                <TextBox Width="160"
+                                <TextBox Style="{StaticResource {x:Type TextBox}}" Width="160"
                                          Text="{Binding LiveCueText, UpdateSourceTrigger=PropertyChanged}"
                                          ToolTip="Short hint to mention in the next response"/>
                                 <Button Content="Inject" Command="{Binding ApplyLiveCueCommand}" Margin="6,0,0,0"/>
                             </StackPanel>
                         </StackPanel>
-                        <ToggleButton Content="Coach Audio"
+                        <ToggleButton Style="{StaticResource {x:Type ToggleButton}}" Content="Coach Audio"
                                       Margin="0,0,12,12"
                                       Command="{Binding ToggleSpeakAnswersCommand}"
                                       CommandParameter="{Binding IsChecked, RelativeSource={RelativeSource Self}}"
@@ -160,9 +160,9 @@
                         </StackPanel>
                         <Grid>
                             <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                    <TextBlock Text="{Binding LiveQuestion}" TextWrapping="Wrap"/>
-                                </ScrollViewer>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <TextBlock Text="{Binding LiveQuestion}" TextWrapping="Wrap"/>
+                </ScrollViewer>
                             </Border>
                             <TextBlock Text="Start Listening to populate transcript..." Foreground="#999" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock.Style>
@@ -200,9 +200,9 @@
                         </StackPanel>
                         <Grid>
                             <Border BorderBrush="{StaticResource InputBorder}" BorderThickness="1">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                    <TextBlock Text="{Binding LiveAnswer}" TextWrapping="Wrap"/>
-                                </ScrollViewer>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <TextBlock Text="{Binding LiveAnswer}" TextWrapping="Wrap"/>
+                </ScrollViewer>
                             </Border>
                             <TextBlock Text="Answer will appear here..." Foreground="#999" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock.Style>

@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace InterviewCopilot.Services.Prompting;
 
 public sealed class ConversationState
@@ -7,6 +10,8 @@ public sealed class ConversationState
     private readonly object _lock = new();
     private string _liveCue = string.Empty;
     private PromptTone _tone = PromptTone.Neutral;
+    private readonly Queue<(string Question, string Answer)> _history = new();
+    private const int MaxHistory = 5;
 
     private ConversationState() { }
 
@@ -49,6 +54,24 @@ public sealed class ConversationState
         lock (_lock)
         {
             _tone = tone;
+        }
+    }
+
+    public void AddHistory(string question, string answer)
+    {
+        if (string.IsNullOrWhiteSpace(question) || string.IsNullOrWhiteSpace(answer)) return;
+        lock (_lock)
+        {
+            _history.Enqueue((question.Trim(), answer.Trim()));
+            while (_history.Count > MaxHistory) _history.Dequeue();
+        }
+    }
+
+    public IReadOnlyList<(string Question, string Answer)> GetRecentHistory(int take)
+    {
+        lock (_lock)
+        {
+            return _history.Reverse().Take(take).ToList();
         }
     }
 }

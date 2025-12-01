@@ -175,7 +175,7 @@ public partial class SettingsWindow : Window
     {
         var s = _settings.Load();
         var builder = new AnswerPromptBuilder(s, ConversationState.Instance);
-        var prompt = builder.Build("Generate a concise company-role cheat sheet with bullet points and key talking points.", consumeCue: false);
+        var prompt = builder.Build("Generate a concise company-role cheat sheet with bullet points and key talking points.", QuestionCategory.Technical, consumeCue: false);
         CheatBox.Text = "Generating cheat sheet...";
         try
         {

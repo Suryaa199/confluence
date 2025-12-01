@@ -20,6 +20,7 @@ public sealed class NaudioAudioService : IAudioService
     public bool IsCapturing { get; private set; }
     public event Action<AudioFrame>? OnFrame;
     public event Action<double>? OnLevel;
+    public event Action? OnSilenceDetected;
 
     public Task StartAsync(AudioOptions options)
     {
@@ -127,7 +128,12 @@ public sealed class NaudioAudioService : IAudioService
         double sum = 0;
         for (int i = 0; i < samples.Length; i++) { var v = samples[i]; sum += v * v; }
         double rms = Math.Sqrt(sum / Math.Max(1, samples.Length));
-        OnLevel?.Invoke(Math.Min(1.0, rms * 4));
+        var normalized = Math.Min(1.0, rms * 4);
+        OnLevel?.Invoke(normalized);
+        if (normalized < 0.02)
+        {
+            OnSilenceDetected?.Invoke();
+        }
         // Session gating (PerApp only) while still allowing short post-activity tails
         if (_options?.Source == AudioSourceKind.PerApp)
         {

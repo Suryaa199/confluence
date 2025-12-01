@@ -48,6 +48,8 @@ public class MainViewModel : INotifyPropertyChanged
     private string _selectedProviderProfile = "OpenAI Only";
     private bool _suppressProviderProfileSync;
     private bool _autoRetryInFlight;
+    private bool _answerStreamStarted;
+    private bool _lastAnswerNeededRetry;
 
     public string LiveQuestion { get => _liveQuestion; set { _liveQuestion = value; OnPropertyChanged(); } }
     public string LiveAnswer { get => _liveAnswer; set { _liveAnswer = value; OnPropertyChanged(); } }
@@ -133,6 +135,22 @@ public class MainViewModel : INotifyPropertyChanged
     public string SelectedProviderProfile { get => _selectedProviderProfile; set { if (_selectedProviderProfile != value) { _selectedProviderProfile = value; OnPropertyChanged(); ApplyProviderProfile(value); } } }
     public string LiveCueText { get => _liveCueText; set { _liveCueText = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
 
+    public ObservableCollection<string> Personas { get; } = new(new[] { "Junior", "Senior", "Director", "Rapid" });
+    private string _selectedPersona = "Senior";
+    public string SelectedPersona
+    {
+        get => _selectedPersona;
+        set
+        {
+            if (_selectedPersona != value && !string.IsNullOrEmpty(value))
+            {
+                _selectedPersona = value;
+                OnPropertyChanged();
+                UpdatePersona(value);
+            }
+        }
+    }
+
     public MainViewModel()
     {
         ToggleCaptureCommand = new RelayCommand(_ => ToggleCapture());
@@ -182,6 +200,7 @@ public class MainViewModel : INotifyPropertyChanged
         SelectedLlmProvider = string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase) ? "Ollama" : "OpenAI";
         SelectedAsrProvider = string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase) ? "Local" : "OpenAI";
         UpdateProviderProfileFromSelections();
+        UpdatePersona(_selectedPersona);
     }
 
     private void RefreshStatus()
@@ -222,6 +241,8 @@ public class MainViewModel : INotifyPropertyChanged
         IsCapturing = true;
 
         _orchestrator = Services.AppServices.CreateOrchestrator();
+        _orchestrator.OnSpeechInterruption += FlushOverlay;
+        _answerStreamStarted = false;
         _orchestrator.OnTranscript += text =>
         {
             LiveQuestion += (LiveQuestion.Length > 0 ? " " : "") + text;
@@ -229,6 +250,12 @@ public class MainViewModel : INotifyPropertyChanged
         };
         _orchestrator.OnAnswerToken += tok =>
         {
+            if (!_answerStreamStarted)
+            {
+                LiveAnswer = string.Empty;
+                _overlay?.SetAnswer(string.Empty);
+                _answerStreamStarted = true;
+            }
             lock (_answerBuffer)
             {
                 _answerBuffer.Append(tok);
@@ -242,9 +269,14 @@ public class MainViewModel : INotifyPropertyChanged
             App.Current.Dispatcher.Invoke(() =>
             {
                 LiveAnswer = Services.Prompting.AnswerPolisher.Polish(LiveAnswer);
+                LiveAnswer = Services.Prompting.GuardrailFilter.Apply(LiveAnswer);
+                LiveAnswer = AppendDurationHint(LiveAnswer);
                 _overlay?.SetAnswer(LiveAnswer);
                 FollowUps.Clear();
                 foreach (var f in combined) FollowUps.Add(f);
+                var historyQuestion = Services.Prompting.TranscriptPreprocessor.ExtractLatestQuestion(LiveQuestion);
+                Services.Prompting.ConversationState.Instance.AddHistory(historyQuestion, LiveAnswer);
+                LogTelemetry(historyQuestion);
                 // Save story when follow-ups arrive (answer considered complete)
                 _ = Services.AppServices.Stories.SaveAsync(LiveQuestion, LiveAnswer, DateTimeOffset.Now);
                 if (SpeakAnswersEnabled)
@@ -252,6 +284,7 @@ public class MainViewModel : INotifyPropertyChanged
                     _ = Services.AppServices.Tts.SpeakAsync(LiveAnswer, CancellationToken.None);
                 }
                 IsAnswerStreaming = false;
+                _answerStreamStarted = false;
             });
             _ = MaybeAutoRegenerateAsync();
         };
@@ -292,6 +325,7 @@ public class MainViewModel : INotifyPropertyChanged
         LlmStatus = "Idle";
         if (_orchestrator is not null)
         {
+            _orchestrator.OnSpeechInterruption -= FlushOverlay;
             await _orchestrator.StopAsync();
             _orchestrator.Dispose();
             _orchestrator = null;
@@ -336,10 +370,22 @@ public class MainViewModel : INotifyPropertyChanged
 
     private async Task RegenerateAsync()
     {
-        var q = string.IsNullOrWhiteSpace(LiveQuestion) ? "Give a concise summary of my strengths." : LiveQuestion;
+        var q = string.IsNullOrWhiteSpace(LiveQuestion)
+            ? "Give a concise summary of my strengths."
+            : Services.Prompting.TranscriptPreprocessor.ExtractLatestQuestion(LiveQuestion);
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            q = "Give a concise summary of my strengths.";
+        }
+        var category = Services.Prompting.TranscriptPreprocessor.Classify(q);
+        if (category == QuestionCategory.Noise || category == QuestionCategory.Greeting)
+        {
+            category = QuestionCategory.Technical;
+        }
         q = Services.Prompting.QuestionIntentRebuilder.Rebuild(q);
         var builder = new AnswerPromptBuilder(Services.AppServices.LoadSettings(), ConversationState.Instance);
-        var prompt = builder.Build(q);
+        _lastAnswerNeededRetry = false;
+        var prompt = builder.Build(q, category);
         LiveAnswer = string.Empty;
         lock (_answerBuffer) _answerBuffer.Clear();
         IsAnswerStreaming = true;
@@ -394,6 +440,18 @@ public class MainViewModel : INotifyPropertyChanged
         });
     }
 
+    private void UpdatePersona(string persona)
+    {
+        var parsed = persona switch
+        {
+            "Junior" => AnswerPersona.Junior,
+            "Director" => AnswerPersona.Director,
+            "Rapid" => AnswerPersona.Rapid,
+            _ => AnswerPersona.Senior
+        };
+        AnswerControl.SetPersona(parsed);
+    }
+
     private IReadOnlyList<string> BuildFollowUps(IReadOnlyList<string>? modelList)
     {
         var list = new List<string>();
@@ -422,6 +480,7 @@ public class MainViewModel : INotifyPropertyChanged
         if (_autoRetryInFlight) return;
         if (string.IsNullOrWhiteSpace(LiveAnswer)) return;
         if (!Services.Prompting.AnswerEvaluator.NeedsRetry(LiveAnswer)) return;
+        _lastAnswerNeededRetry = true;
         _autoRetryInFlight = true;
         try
         {
@@ -431,6 +490,26 @@ public class MainViewModel : INotifyPropertyChanged
         {
             _autoRetryInFlight = false;
         }
+    }
+
+    private string AppendDurationHint(string answer)
+    {
+        var target = AnswerControl.GetTargetDurationSeconds();
+        return string.IsNullOrWhiteSpace(answer)
+            ? answer
+            : answer + $"\n(Duration target: {target}s persona {SelectedPersona})";
+    }
+
+    private void LogTelemetry(string question)
+    {
+        if (string.IsNullOrWhiteSpace(question)) return;
+        var category = Services.Prompting.TranscriptPreprocessor.Classify(question);
+        Services.TelemetryLogger.LogAnswer(
+            question,
+            LiveAnswer,
+            category,
+            SelectedPersona,
+            _lastAnswerNeededRetry);
     }
 
     private void ApplyPreset(string preset)

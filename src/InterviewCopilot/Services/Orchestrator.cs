@@ -26,6 +26,9 @@ public sealed class Orchestrator : IDisposable
     private int _rev;
     private bool _answerInProgress;
     private readonly System.Text.StringBuilder _agg = new();
+    private string _lastTranscriptChunk = string.Empty;
+    public event Action<double>? OnNoiseLevel;
+    public event Action? OnSpeechInterruption;
 
     public event Action<string>? OnTranscript;
     public event Action<string>? OnAnswerToken;
@@ -44,11 +47,17 @@ public sealed class Orchestrator : IDisposable
         _promptBuilder = new AnswerPromptBuilder(settings, ConversationState.Instance);
         _vad.Configure(enabled: true, minVoiceMs: settings.VadMinVoiceMs, maxSilenceMs: settings.VadMaxSilenceMs);
         _audio.OnFrame += HandleFrame;
+        _audio.OnLevel += OnAudioLevel;
+        if (_audio is Audio.NaudioAudioService naudio)
+        {
+            naudio.OnSilenceDetected += HandleSilence;
+        }
     }
 
     public async Task StartAsync(AudioOptions options)
     {
         _cts = new CancellationTokenSource();
+        _lastTranscriptChunk = string.Empty;
         await _audio.StartAsync(options);
         _ = _spooler.FlushAsync(ProcessSpoolChunkAsync, _cts.Token);
     }
@@ -124,19 +133,23 @@ public sealed class Orchestrator : IDisposable
     private void HandleTranscript(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
+        var cleaned = TranscriptPreprocessor.Clean(text);
+        if (string.IsNullOrWhiteSpace(cleaned)) return;
+        if (string.Equals(cleaned, _lastTranscriptChunk, StringComparison.OrdinalIgnoreCase)) return;
+        _lastTranscriptChunk = cleaned;
         if (_smallTalkResponder.TryRespond(text, OnAnswerToken))
         {
-            OnTranscript?.Invoke(text);
+            OnTranscript?.Invoke(cleaned);
             return;
         }
-        _hintEngine.Analyze(text, OnAnswerToken);
+        _hintEngine.Analyze(cleaned, OnAnswerToken);
         lock (_lock)
         {
             _agg.Append(_agg.Length > 0 ? " " : string.Empty);
-            _agg.Append(text);
+            _agg.Append(cleaned);
             _rev++;
         }
-        OnTranscript?.Invoke(text);
+        OnTranscript?.Invoke(cleaned);
         _ = DebouncedGenerateAsync();
     }
 
@@ -166,14 +179,24 @@ public sealed class Orchestrator : IDisposable
             question = _agg.ToString();
         }
         question = TakeRecentQuestion(question);
-        question = Prompting.QuestionIntentRebuilder.Rebuild(question);
+        var extracted = TranscriptPreprocessor.ExtractLatestQuestion(question);
+        if (string.IsNullOrWhiteSpace(extracted)) return;
+        var category = TranscriptPreprocessor.Classify(extracted);
+        extracted = QuestionIntentRebuilder.Rebuild(extracted);
         await Task.Delay(1200);
         lock (_lock)
         {
             if (startRev != _rev || _answerInProgress) return;
             _answerInProgress = true;
         }
-        var prompt = _promptBuilder.Build(question);
+        if (category == QuestionCategory.Greeting || category == QuestionCategory.Noise)
+        {
+            lock (_lock) _answerInProgress = false;
+            return;
+        }
+        var draftPrompt = _promptBuilder.BuildDraft(extracted, category);
+        var draftOutline = await GenerateDraftOutlineAsync(draftPrompt, _cts?.Token ?? CancellationToken.None);
+        var prompt = _promptBuilder.Build(extracted, category, draft: draftOutline);
         try
         {
             await GenerateAnswerAsync(prompt, _cts?.Token ?? CancellationToken.None);
@@ -190,11 +213,40 @@ public sealed class Orchestrator : IDisposable
         HandleTranscript(FilterToEnglish(text));
     }
 
+    private static async Task<string> GenerateDraftOutlineAsync(LlmPrompt prompt, CancellationToken ct)
+    {
+        var sb = new System.Text.StringBuilder();
+        try
+        {
+            await foreach (var token in AppServices.Llm.StreamAnswerAsync(prompt, ct))
+            {
+                sb.Append(token);
+                if (sb.Length > 600) break;
+            }
+        }
+        catch
+        {
+            return string.Empty;
+        }
+        return sb.ToString().Trim();
+    }
+
     public void Dispose()
     {
         _audio.OnFrame -= HandleFrame;
+        _audio.OnLevel -= OnAudioLevel;
+        if (_audio is Audio.NaudioAudioService naudio)
+        {
+            naudio.OnSilenceDetected -= HandleSilence;
+        }
         _cts?.Cancel();
         _cts?.Dispose();
+        _lastTranscriptChunk = string.Empty;
+    }
+
+    private void HandleSilence()
+    {
+        OnSpeechInterruption?.Invoke();
     }
 
     private static string FilterToEnglish(string input)

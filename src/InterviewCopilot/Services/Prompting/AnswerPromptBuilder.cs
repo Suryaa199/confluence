@@ -36,9 +36,19 @@ Mini Example: Reduced p95 420 ms→180 ms using tuned rollout.
         _contextRetriever = new ContextRetriever(settings);
     }
 
-    public LlmPrompt Build(string question, bool consumeCue = true)
+    public LlmPrompt Build(string question, QuestionCategory category, bool consumeCue = true, string? draft = null)
     {
         var profile = _classifier.Classify(question);
+        profile = category switch
+        {
+            QuestionCategory.Behavioral => QuestionType.Experience,
+            QuestionCategory.Architecture => QuestionType.Architecture,
+            QuestionCategory.Troubleshooting => QuestionType.Troubleshooting,
+            QuestionCategory.Security => QuestionType.Security,
+            QuestionCategory.Greeting => QuestionType.General,
+            QuestionCategory.Noise => QuestionType.General,
+            _ => profile
+        };
         var (maxSnippets, minScore) = profile switch
         {
             QuestionType.Definition => (2, 0.08),
@@ -48,8 +58,8 @@ Mini Example: Reduced p95 420 ms→180 ms using tuned rollout.
         var snippets = _contextRetriever.GetTopSnippets(question, maxSnippets, minScore);
         var scenario = ScenarioLibrary.MatchScenario(question, snippets);
 
-        var context = ComposeContext(question, snippets, scenario, profile, consumeCue);
-        var systemInstruction = PromptTemplates.GetSystemInstruction(profile, _state.Tone);
+        var context = ComposeContext(question, snippets, scenario, profile, category, consumeCue, draft);
+        var systemInstruction = PromptTemplates.GetSystemInstruction(profile, _state.Tone, category);
         if (!string.IsNullOrWhiteSpace(scenario.Topic))
         {
             systemInstruction += $" Highlight tooling around {scenario.Topic} when helpful.";
@@ -58,16 +68,71 @@ Mini Example: Reduced p95 420 ms→180 ms using tuned rollout.
         return new LlmPrompt(question, context, systemInstruction);
     }
 
-    private string ComposeContext(string question, IReadOnlyList<ContextSnippet> snippets, ScenarioEntry scenario, QuestionType type, bool consumeCue)
+    public LlmPrompt BuildDraft(string question, QuestionCategory category)
+    {
+        var profile = category switch
+        {
+            QuestionCategory.Behavioral => QuestionType.Experience,
+            QuestionCategory.Architecture => QuestionType.Architecture,
+            QuestionCategory.Troubleshooting => QuestionType.Troubleshooting,
+            QuestionCategory.Security => QuestionType.Security,
+            _ => QuestionType.General
+        };
+        var context = ComposeDraftContext(question, category);
+        var system = "Create a terse outline (max 3 bullets) capturing key actions + tools. No CLI, no mini example.";
+        return new LlmPrompt(question, context, system);
+    }
+
+    private string ComposeContext(string question, IReadOnlyList<ContextSnippet> snippets, ScenarioEntry scenario, QuestionType type, QuestionCategory category, bool consumeCue, string? draft)
     {
         var sb = new StringBuilder();
         var skills = BuildSkillSignals(type, scenario, snippets);
         sb.AppendLine("Context Skills: " + skills);
+        sb.AppendLine("Detected Category: " + category);
+        sb.AppendLine("Experience Summary: " + ExperienceProfile.GetSummary());
+        var expSnippet = ExperienceProfile.GetSnippet(question);
+        if (!string.IsNullOrWhiteSpace(expSnippet))
+        {
+            sb.AppendLine("Experience Example: " + expSnippet);
+        }
+        var packs = KnowledgePackLibrary.Match(question, category);
+        if (packs.Count > 0)
+        {
+            sb.AppendLine("Knowledge Packs:");
+            foreach (var pack in packs)
+            {
+                sb.AppendLine($"- {pack.Name}: {pack.Facts.FirstOrDefault()} ");
+            }
+        }
 
         var cue = consumeCue ? _state.ConsumeLiveCue() : _state.PeekLiveCue();
         if (!string.IsNullOrWhiteSpace(cue))
         {
             sb.AppendLine("Follow-up requested: " + TrimField(cue, 120));
+        }
+
+        var history = _state.GetRecentHistory(3);
+        if (history.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Recent context:");
+            foreach (var (q, a) in history)
+            {
+                sb.AppendLine($"- PrevQ: {TrimField(q, 120)}");
+                sb.AppendLine($"  PrevA: {TrimField(a, 120)}");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(draft))
+        {
+            sb.AppendLine();
+            sb.AppendLine("Draft Outline: " + TrimField(draft, 400));
+        }
+
+        var diagram = GetDiagramHint(category);
+        if (!string.IsNullOrWhiteSpace(diagram))
+        {
+            sb.AppendLine("ASCII Diagram Hint: " + diagram);
         }
 
         sb.AppendLine();
@@ -78,6 +143,16 @@ Mini Example: Reduced p95 420 ms→180 ms using tuned rollout.
         sb.AppendLine("Reference Format Samples:");
         sb.AppendLine(FewShotExamples);
 
+        return sb.ToString();
+    }
+
+    private string ComposeDraftContext(string question, QuestionCategory category)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Key skills: Azure, AKS, Terraform, GitHub Actions, Trivy, Key Vault, Helm, ArgoCD.");
+        sb.AppendLine("Detected category: " + category);
+        sb.AppendLine("Question: " + question.Trim());
+        sb.AppendLine("Return 2-3 outline bullets only, no CLI.");
         return sb.ToString();
     }
 
@@ -140,5 +215,11 @@ Mini Example: Reduced p95 420 ms→180 ms using tuned rollout.
         var normalized = text.Replace("\r", " ").Replace("\n", " ").Trim();
         if (normalized.Length <= maxChars) return normalized;
         return normalized[..maxChars] + "…";
+    }
+
+    private static string? GetDiagramHint(QuestionCategory category)
+    {
+        if (category != QuestionCategory.Architecture) return null;
+        return "Client -> NGINX -> AKS -> Pods -> Redis/DB";
     }
 }
