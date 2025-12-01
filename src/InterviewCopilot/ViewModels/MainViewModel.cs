@@ -241,7 +241,7 @@ public class MainViewModel : INotifyPropertyChanged
         IsCapturing = true;
 
         _orchestrator = Services.AppServices.CreateOrchestrator();
-        _orchestrator.OnSpeechInterruption += FlushOverlay;
+        _orchestrator.OnSpeechInterruption += OnSpeechInterruption;
         _answerStreamStarted = false;
         _orchestrator.OnTranscript += text =>
         {
@@ -325,7 +325,7 @@ public class MainViewModel : INotifyPropertyChanged
         LlmStatus = "Idle";
         if (_orchestrator is not null)
         {
-            _orchestrator.OnSpeechInterruption -= FlushOverlay;
+            _orchestrator.OnSpeechInterruption -= OnSpeechInterruption;
             await _orchestrator.StopAsync();
             _orchestrator.Dispose();
             _orchestrator = null;
@@ -490,6 +490,13 @@ public class MainViewModel : INotifyPropertyChanged
         {
             _autoRetryInFlight = false;
         }
+    }
+
+    private void OnSpeechInterruption()
+    {
+        LiveAnswer = string.Empty;
+        _overlay?.SetAnswer(string.Empty);
+        _answerStreamStarted = false;
     }
 
     private string AppendDurationHint(string answer)

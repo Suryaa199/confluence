@@ -47,7 +47,7 @@ public sealed class Orchestrator : IDisposable
         _promptBuilder = new AnswerPromptBuilder(settings, ConversationState.Instance);
         _vad.Configure(enabled: true, minVoiceMs: settings.VadMinVoiceMs, maxSilenceMs: settings.VadMaxSilenceMs);
         _audio.OnFrame += HandleFrame;
-        _audio.OnLevel += OnAudioLevel;
+        _audio.OnLevel += _ => { };
         if (_audio is Audio.NaudioAudioService naudio)
         {
             naudio.OnSilenceDetected += HandleSilence;
@@ -234,7 +234,7 @@ public sealed class Orchestrator : IDisposable
     public void Dispose()
     {
         _audio.OnFrame -= HandleFrame;
-        _audio.OnLevel -= OnAudioLevel;
+        _audio.OnLevel -= _ => { };
         if (_audio is Audio.NaudioAudioService naudio)
         {
             naudio.OnSilenceDetected -= HandleSilence;
