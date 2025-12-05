@@ -252,8 +252,10 @@ public class MainViewModel : INotifyPropertyChanged
         {
             App.Current?.Dispatcher.BeginInvoke(() =>
             {
+                Services.LogService.Info("Transcript chunk: " + text);
                 LiveQuestion += (LiveQuestion.Length > 0 ? " " : "") + text;
                 UpdatePredictedFollowUps();
+                Services.LogService.Info("LiveQuestion=" + LiveQuestion);
             });
         };
         _orchestrator.OnAnswerToken += tok =>
@@ -270,6 +272,7 @@ public class MainViewModel : INotifyPropertyChanged
                 {
                     _answerBuffer.Append(tok);
                 }
+                Services.LogService.Info("Answer token appended; length=" + _answerBuffer.Length);
                 if (!_flushTimer.IsEnabled) _flushTimer.Start();
                 IsAnswerStreaming = true;
             });
@@ -279,6 +282,7 @@ public class MainViewModel : INotifyPropertyChanged
             var combined = BuildFollowUps(list);
             App.Current.Dispatcher.Invoke(() =>
             {
+                Services.LogService.Info("Answer completed: " + LiveAnswer);
                 LiveAnswer = Services.Prompting.AnswerPolisher.Polish(LiveAnswer);
                 LiveAnswer = Services.Prompting.GuardrailFilter.Apply(LiveAnswer);
                 LiveAnswer = AppendDurationHint(LiveAnswer);
@@ -539,6 +543,7 @@ public class MainViewModel : INotifyPropertyChanged
             category,
             SelectedPersona,
             _lastAnswerNeededRetry);
+        Services.LogService.Info($"Telemetry: {category} persona {SelectedPersona} retry={_lastAnswerNeededRetry}");
         TelemetryEntries.Insert(0, new TelemetryEntry
         {
             Question = question,
