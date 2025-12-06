@@ -65,23 +65,22 @@ public static class TranscriptPreprocessor
     {
         if (string.IsNullOrWhiteSpace(transcript)) return string.Empty;
         var trimmed = transcript.Trim();
-        var lastQuestion = trimmed.LastIndexOf('?');
-        if (lastQuestion >= 0)
+        var pattern = "(?is)(what|how|why|when|where|explain|walk me through|tell me about)[^?]+\\?";
+        var matches = Regex.Matches(trimmed, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (matches.Count > 0)
         {
-            var start = trimmed.LastIndexOfAny(new[] { '.', '!', '?', '\n' }, Math.Max(0, lastQuestion - 1));
-            var question = trimmed.Substring(start >= 0 ? start + 1 : 0, lastQuestion - (start >= 0 ? start + 1 : 0) + 1);
-            return question.Trim();
+            return matches[^1].Value.Trim();
         }
         var sentences = trimmed.Split(new[] { '.', '!', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         for (int i = sentences.Length - 1; i >= 0; i--)
         {
             var sentence = sentences[i].Trim();
-            if (sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 3)
+            if (sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 6)
             {
-                return sentence;
+                return sentence + "?";
             }
         }
-        return trimmed;
+        return string.Empty;
     }
 
     private static readonly string[] ArchitectureTokens =
