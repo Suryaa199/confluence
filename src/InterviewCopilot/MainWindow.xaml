@@ -298,6 +298,7 @@
             <Border Grid.Column="1" Background="{DynamicResource SurfaceVariant}" CornerRadius="6" Padding="8" Visibility="{Binding IsTelemetryView, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
                     <TextBlock Text="Session Telemetry" Style="{StaticResource Subtitle}"/>
+                    <TextBlock Text="{Binding LogFilePath, StringFormat=Log file: {0}}" Margin="0,4,0,4" Foreground="#AAA" TextWrapping="Wrap"/>
                     <ListView ItemsSource="{Binding TelemetryEntries}" Margin="0,8,0,0">
                         <ListView.View>
                             <GridView>

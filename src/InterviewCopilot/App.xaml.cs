@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Threading;
+using InterviewCopilot.Services;
 
 namespace InterviewCopilot;
 
@@ -8,7 +9,7 @@ public partial class App : Application
     public App()
     {
         DispatcherUnhandledException += OnDispatcherUnhandledException;
-        Services.LogService.Initialize();
+        LogService.Initialize();
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

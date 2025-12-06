@@ -183,6 +183,13 @@ public sealed class Orchestrator : IDisposable
         if (string.IsNullOrWhiteSpace(extracted)) return;
         var category = TranscriptPreprocessor.Classify(extracted);
         extracted = QuestionIntentRebuilder.Rebuild(extracted);
+        extracted = QuestionSanitizer.Sanitize(extracted);
+        if (string.IsNullOrWhiteSpace(extracted) || extracted.Length < 3)
+        {
+            LogService.Warn("Skipping question due to insufficient content.");
+            lock (_lock) _answerInProgress = false;
+            return;
+        }
         await Task.Delay(1200);
         lock (_lock)
         {

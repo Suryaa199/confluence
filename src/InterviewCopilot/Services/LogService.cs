@@ -10,6 +10,7 @@ public static class LogService
     private static readonly ConcurrentQueue<string> _buffer = new();
     private static readonly object _fileGate = new();
     private static string? _logPath;
+    public static string LogPath => _logPath ?? string.Empty;
 
     public static event Action<string>? OnLog;
 
