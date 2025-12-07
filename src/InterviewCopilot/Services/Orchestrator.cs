@@ -160,7 +160,11 @@ public sealed class Orchestrator : IDisposable
             await _coach.GenerateAsync(
                 prompt,
                 token => OnAnswerToken?.Invoke(token),
-                followUps => OnFollowUps?.Invoke(followUps),
+                followUps =>
+                {
+                    OnFollowUps?.Invoke(followUps);
+                    ResetTranscriptBuffer();
+                },
                 ct);
         }
         catch (Exception ex)
@@ -292,5 +296,16 @@ public sealed class Orchestrator : IDisposable
             return trimmed.Substring(Math.Max(0, last - maxChars)).Trim();
         }
         return trimmed.Substring(trimmed.Length - maxChars).Trim();
+    }
+
+    private void ResetTranscriptBuffer()
+    {
+        lock (_lock)
+        {
+            _agg.Clear();
+            _rev = 0;
+            _lastTranscriptChunk = string.Empty;
+        }
+        LogService.Info("Transcript cleared");
     }
 }
