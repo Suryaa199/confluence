@@ -27,6 +27,7 @@ public sealed class Orchestrator : IDisposable
     private bool _answerInProgress;
     private readonly System.Text.StringBuilder _agg = new();
     private string _lastTranscriptChunk = string.Empty;
+    private (string Text, QuestionCategory Category)? _pendingQuestion;
     public event Action<double>? OnNoiseLevel;
     public event Action? OnSpeechInterruption;
 
@@ -164,6 +165,7 @@ public sealed class Orchestrator : IDisposable
                 {
                     OnFollowUps?.Invoke(followUps);
                     ResetTranscriptBuffer();
+                    _ = TryProcessQueuedQuestionAsync();
                 },
                 ct);
         }
@@ -195,27 +197,31 @@ public sealed class Orchestrator : IDisposable
             return;
         }
         await Task.Delay(1200);
-        lock (_lock)
-        {
-            if (startRev != _rev || _answerInProgress) return;
-            _answerInProgress = true;
-        }
         if (category == QuestionCategory.Greeting || category == QuestionCategory.Noise)
         {
-            lock (_lock) _answerInProgress = false;
             return;
         }
-        var draftPrompt = _promptBuilder.BuildDraft(extracted, category);
-        var draftOutline = await GenerateDraftOutlineAsync(draftPrompt, _cts?.Token ?? CancellationToken.None);
-        var prompt = _promptBuilder.Build(extracted, category, draft: draftOutline);
-        try
+        lock (_lock)
         {
-            await GenerateAnswerAsync(prompt, _cts?.Token ?? CancellationToken.None);
+            if (startRev != _rev)
+            {
+                return;
+            }
+            if (_answerInProgress)
+            {
+                _pendingQuestion = (extracted, category);
+                LogService.Info("Queued question while answer in progress.");
+                return;
+            }
+            if (!HasRequiredSilence())
+            {
+                _pendingQuestion = (extracted, category);
+                LogService.Info("Queued question awaiting silence.");
+                return;
+            }
+            _answerInProgress = true;
         }
-        finally
-        {
-            lock (_lock) _answerInProgress = false;
-        }
+        await RunAnswerFlowAsync(extracted, category);
     }
 
     private async Task ProcessSpoolChunkAsync(byte[] wavBytes, CancellationToken ct)
@@ -258,6 +264,7 @@ public sealed class Orchestrator : IDisposable
     private void HandleSilence()
     {
         OnSpeechInterruption?.Invoke();
+        _ = TryProcessQueuedQuestionAsync();
     }
 
     private void HandleAudioLevel(double level)
@@ -307,5 +314,43 @@ public sealed class Orchestrator : IDisposable
             _lastTranscriptChunk = string.Empty;
         }
         LogService.Info("Transcript cleared");
+    }
+
+    private bool HasRequiredSilence()
+    {
+        if (_lastSpeech == DateTime.MinValue) return true;
+        var elapsed = DateTime.UtcNow - _lastSpeech;
+        return elapsed.TotalMilliseconds >= _settings.VadMaxSilenceMs;
+    }
+
+    private async Task RunAnswerFlowAsync(string question, QuestionCategory category)
+    {
+        var draftPrompt = _promptBuilder.BuildDraft(question, category);
+        var draftOutline = await GenerateDraftOutlineAsync(draftPrompt, _cts?.Token ?? CancellationToken.None);
+        var prompt = _promptBuilder.Build(question, category, draft: draftOutline);
+        try
+        {
+            await GenerateAnswerAsync(prompt, _cts?.Token ?? CancellationToken.None);
+        }
+        finally
+        {
+            lock (_lock) _answerInProgress = false;
+        }
+    }
+
+    private Task TryProcessQueuedQuestionAsync()
+    {
+        (string Text, QuestionCategory Category)? pending = null;
+        lock (_lock)
+        {
+            if (_answerInProgress) return Task.CompletedTask;
+            if (_pendingQuestion is null) return Task.CompletedTask;
+            if (!HasRequiredSilence()) return Task.CompletedTask;
+            pending = _pendingQuestion;
+            _pendingQuestion = null;
+            _answerInProgress = true;
+        }
+        LogService.Info("Processing queued question.");
+        return RunAnswerFlowAsync(pending.Value.Text, pending.Value.Category);
     }
 }
