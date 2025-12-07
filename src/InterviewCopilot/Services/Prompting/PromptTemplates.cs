@@ -33,6 +33,8 @@ public static class PromptTemplates
             QuestionCategory.Architecture => "If architecture, mention components flow and optional ASCII arrow diagram (max 2 lines).",
             QuestionCategory.Troubleshooting => "Troubleshooting answers must show Check → Validate → Fix path.",
             QuestionCategory.Security => "Security answers must cite identity, network, scanning, monitoring in order.",
+            QuestionCategory.FollowUp => "Start by anchoring to the prior result (\"As noted earlier...\") before adding the new insight.",
+            QuestionCategory.Closing => "Closing question: Bullet 3 should express gratitude + next-step enthusiasm.",
             _ => string.Empty
         };
 

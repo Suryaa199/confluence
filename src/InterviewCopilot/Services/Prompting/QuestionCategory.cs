@@ -7,6 +7,8 @@ public enum QuestionCategory
     Troubleshooting,
     Security,
     Behavioral,
+    FollowUp,
+    Closing,
     Greeting,
     Noise
 }

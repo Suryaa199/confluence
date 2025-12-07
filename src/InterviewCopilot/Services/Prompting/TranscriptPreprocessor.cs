@@ -46,6 +46,37 @@ public static class TranscriptPreprocessor
         "weakness"
     };
 
+    private static readonly string[] FollowUpTokens =
+    {
+        "tell me more",
+        "follow up",
+        "follow-up",
+        "double click",
+        "double-click",
+        "dive deeper",
+        "walk me deeper",
+        "elaborate",
+        "you mentioned",
+        "earlier you said",
+        "expand on",
+        "more detail",
+        "dig into"
+    };
+
+    private static readonly string[] ClosingTokens =
+    {
+        "any questions for us",
+        "anything you want to ask",
+        "do you have any questions",
+        "final question",
+        "last question",
+        "before we wrap",
+        "closing thoughts",
+        "closing question",
+        "why should we hire you",
+        "any other questions"
+    };
+
     public static string Clean(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
@@ -127,6 +158,8 @@ public static class TranscriptPreprocessor
         var lower = question.ToLowerInvariant();
         if (GreetingTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Greeting;
         if (BehavioralTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Behavioral;
+        if (FollowUpTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.FollowUp;
+        if (ClosingTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Closing;
         if (ArchitectureTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Architecture;
         if (TroubleshootTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Troubleshooting;
         if (SecurityTokens.Any(token => ContainsToken(lower, token))) return QuestionCategory.Security;

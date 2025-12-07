@@ -45,6 +45,8 @@ Mini Example: Reduced p95 420 ms→180 ms using tuned rollout.
             QuestionCategory.Architecture => QuestionType.Architecture,
             QuestionCategory.Troubleshooting => QuestionType.Troubleshooting,
             QuestionCategory.Security => QuestionType.Security,
+            QuestionCategory.FollowUp => profile,
+            QuestionCategory.Closing => QuestionType.General,
             QuestionCategory.Greeting => QuestionType.General,
             QuestionCategory.Noise => QuestionType.General,
             _ => profile
@@ -76,6 +78,8 @@ Mini Example: Reduced p95 420 ms→180 ms using tuned rollout.
             QuestionCategory.Architecture => QuestionType.Architecture,
             QuestionCategory.Troubleshooting => QuestionType.Troubleshooting,
             QuestionCategory.Security => QuestionType.Security,
+            QuestionCategory.FollowUp => QuestionType.Technical,
+            QuestionCategory.Closing => QuestionType.General,
             _ => QuestionType.General
         };
         var context = ComposeDraftContext(question, category);
@@ -109,6 +113,18 @@ Mini Example: Reduced p95 420 ms→180 ms using tuned rollout.
         if (!string.IsNullOrWhiteSpace(cue))
         {
             sb.AppendLine("Follow-up requested: " + TrimField(cue, 120));
+        }
+
+        var related = _state.GetRelatedHistory(question, 1);
+        if (related.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Related context to reference:");
+            foreach (var (rq, ra) in related)
+            {
+                sb.AppendLine($"- RelatedQ: {TrimField(rq, 120)}");
+                sb.AppendLine($"  RelatedA: {TrimField(ra, 200)}");
+            }
         }
 
         var history = _state.GetRecentHistory(3);

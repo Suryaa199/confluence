@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
 using System.Windows.Threading;
@@ -51,6 +52,7 @@ public class MainViewModel : INotifyPropertyChanged
     private bool _autoRetryInFlight;
     private bool _answerStreamStarted;
     private bool _lastAnswerNeededRetry;
+    private CancellationTokenSource? _ttsCts;
 
     public string LiveQuestion { get => _liveQuestion; set { _liveQuestion = value; OnPropertyChanged(); } }
     public string LiveAnswer { get => _liveAnswer; set { _liveAnswer = value; OnPropertyChanged(); } }
@@ -297,7 +299,10 @@ public class MainViewModel : INotifyPropertyChanged
                 _ = Services.AppServices.Stories.SaveAsync(LiveQuestion, LiveAnswer, DateTimeOffset.Now);
                 if (SpeakAnswersEnabled)
                 {
-                    _ = Services.AppServices.Tts.SpeakAsync(LiveAnswer, CancellationToken.None);
+                    _ttsCts?.Cancel();
+                    _ttsCts?.Dispose();
+                    _ttsCts = new CancellationTokenSource();
+                    _ = Services.AppServices.Tts.SpeakAsync(LiveAnswer, _ttsCts.Token);
                 }
                 IsAnswerStreaming = false;
                 _answerStreamStarted = false;
@@ -341,6 +346,9 @@ public class MainViewModel : INotifyPropertyChanged
         AudioStatus = "Stopped";
         AsrStatus = "Idle";
         LlmStatus = "Idle";
+        _ttsCts?.Cancel();
+        _ttsCts?.Dispose();
+        _ttsCts = null;
         if (_orchestrator is not null)
         {
             _orchestrator.OnSpeechInterruption -= OnSpeechInterruption;
@@ -520,12 +528,25 @@ public class MainViewModel : INotifyPropertyChanged
 
     private void OnSpeechInterruption()
     {
+        _orchestrator?.CancelActiveAnswer();
         App.Current?.Dispatcher.Invoke(() =>
         {
-            LiveAnswer = string.Empty;
-            _overlay?.SetAnswer(string.Empty);
-            _answerStreamStarted = false;
+            CancelAnswerPlayback("Speech interruption detected");
         });
+    }
+
+    private void CancelAnswerPlayback(string reason)
+    {
+        Services.LogService.Warn("Answer cancelled: " + reason);
+        _flushTimer.Stop();
+        lock (_answerBuffer) _answerBuffer.Clear();
+        LiveAnswer = string.Empty;
+        _overlay?.SetAnswer(string.Empty);
+        _answerStreamStarted = false;
+        IsAnswerStreaming = false;
+        _ttsCts?.Cancel();
+        _ttsCts?.Dispose();
+        _ttsCts = null;
     }
 
     private string AppendDurationHint(string answer)

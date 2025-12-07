@@ -27,6 +27,7 @@ public sealed class Orchestrator : IDisposable
     private bool _answerInProgress;
     private readonly System.Text.StringBuilder _agg = new();
     private string _lastTranscriptChunk = string.Empty;
+    private CancellationTokenSource? _answerCts;
     private (string Text, QuestionCategory Category)? _pendingQuestion;
     public event Action<double>? OnNoiseLevel;
     public event Action? OnSpeechInterruption;
@@ -66,9 +67,12 @@ public sealed class Orchestrator : IDisposable
     public async Task StopAsync()
     {
         _cts?.Cancel();
+        _answerCts?.Cancel();
         await _audio.StopAsync();
         _cts?.Dispose();
         _cts = null;
+        _answerCts?.Dispose();
+        _answerCts = null;
     }
 
     private async void HandleFrame(AudioFrame frame)
@@ -258,6 +262,9 @@ public sealed class Orchestrator : IDisposable
         }
         _cts?.Cancel();
         _cts?.Dispose();
+        _answerCts?.Cancel();
+        _answerCts?.Dispose();
+        _answerCts = null;
         _lastTranscriptChunk = string.Empty;
     }
 
@@ -325,16 +332,29 @@ public sealed class Orchestrator : IDisposable
 
     private async Task RunAnswerFlowAsync(string question, QuestionCategory category)
     {
+        CancellationToken token;
+        lock (_lock)
+        {
+            _answerCts?.Cancel();
+            _answerCts?.Dispose();
+            _answerCts = CancellationTokenSource.CreateLinkedTokenSource(_cts?.Token ?? CancellationToken.None);
+            token = _answerCts.Token;
+        }
         var draftPrompt = _promptBuilder.BuildDraft(question, category);
-        var draftOutline = await GenerateDraftOutlineAsync(draftPrompt, _cts?.Token ?? CancellationToken.None);
+        var draftOutline = await GenerateDraftOutlineAsync(draftPrompt, token);
         var prompt = _promptBuilder.Build(question, category, draft: draftOutline);
         try
         {
-            await GenerateAnswerAsync(prompt, _cts?.Token ?? CancellationToken.None);
+            await GenerateAnswerAsync(prompt, token);
         }
         finally
         {
-            lock (_lock) _answerInProgress = false;
+            lock (_lock)
+            {
+                _answerInProgress = false;
+                _answerCts?.Dispose();
+                _answerCts = null;
+            }
         }
     }
 
@@ -352,5 +372,15 @@ public sealed class Orchestrator : IDisposable
         }
         LogService.Info("Processing queued question.");
         return RunAnswerFlowAsync(pending.Value.Text, pending.Value.Category);
+    }
+
+    public void CancelActiveAnswer()
+    {
+        CancellationTokenSource? toCancel = null;
+        lock (_lock)
+        {
+            toCancel = _answerCts;
+        }
+        toCancel?.Cancel();
     }
 }
