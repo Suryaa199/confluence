@@ -301,6 +301,8 @@ public class MainViewModel : INotifyPropertyChanged
                 }
                 IsAnswerStreaming = false;
                 _answerStreamStarted = false;
+                LiveQuestion = string.Empty;
+                Services.LogService.Info("LiveQuestion cleared");
             });
             _ = MaybeAutoRegenerateAsync();
         };
