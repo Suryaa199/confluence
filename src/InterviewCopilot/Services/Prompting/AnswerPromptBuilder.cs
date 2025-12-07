@@ -78,7 +78,7 @@ Mini Example: Reduced p95 420 ms→180 ms using tuned rollout.
             QuestionCategory.Architecture => QuestionType.Architecture,
             QuestionCategory.Troubleshooting => QuestionType.Troubleshooting,
             QuestionCategory.Security => QuestionType.Security,
-            QuestionCategory.FollowUp => QuestionType.Technical,
+            QuestionCategory.FollowUp => QuestionType.General,
             QuestionCategory.Closing => QuestionType.General,
             _ => QuestionType.General
         };
