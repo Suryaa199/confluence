@@ -5,7 +5,8 @@ public sealed class VadEnergyGate : IVadService
     private bool _enabled;
     private int _minVoiceMs = 200;
     private int _maxSilenceMs = 600;
-    private const float Threshold = 0.015f; // tune later
+    // Slightly lower threshold to avoid missing softer speakers.
+    private const float Threshold = 0.008f;
 
     public bool Enabled => _enabled;
 
@@ -29,4 +30,3 @@ public sealed class VadEnergyGate : IVadService
         return rms > Threshold;
     }
 }
-

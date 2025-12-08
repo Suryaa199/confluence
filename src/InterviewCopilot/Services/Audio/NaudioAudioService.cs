@@ -162,13 +162,12 @@ public sealed class NaudioAudioService : IAudioService
         // Session gating (PerApp only) while still allowing short post-activity tails
         if (_options?.Source == AudioSourceKind.PerApp)
         {
-            if (!_hasMatchingSessions)
-            {
-                return;
-            }
+            // Allow a fallback path when we clearly have signal but session probing did not find a match.
+            var hasSignal = normalized >= 0.05;
+            if (!_hasMatchingSessions && !hasSignal) return;
             var tailActive = _lastSessionActivity != DateTime.MinValue &&
                 (DateTime.UtcNow - _lastSessionActivity).TotalMilliseconds <= SessionTailMs;
-            if (!_sessionActive && !tailActive)
+            if (!_sessionActive && !tailActive && !hasSignal)
             {
                 return;
             }

@@ -56,6 +56,8 @@ public partial class SettingsWindow : Window
         OllamaModelBox.Text = s.OllamaModel;
         FwUrlBox.Text = s.FasterWhisperUrl;
         FwModelBox.Text = s.FasterWhisperModel;
+        DeepgramBaseBox.Text = s.DeepgramBaseUrl;
+        DeepgramModelBox.Text = s.DeepgramModel;
         SetPackCheckboxes(s.EnabledKnowledgePacks);
     }
 
@@ -86,6 +88,8 @@ public partial class SettingsWindow : Window
         s.OllamaModel = OllamaModelBox.Text ?? s.OllamaModel;
         s.FasterWhisperUrl = FwUrlBox.Text ?? s.FasterWhisperUrl;
         s.FasterWhisperModel = FwModelBox.Text ?? s.FasterWhisperModel;
+        s.DeepgramBaseUrl = DeepgramBaseBox.Text ?? s.DeepgramBaseUrl;
+        s.DeepgramModel = DeepgramModelBox.Text ?? s.DeepgramModel;
         s.EnabledKnowledgePacks = GetEnabledPacks();
         KnowledgePackLibrary.SetEnabledPacks(s.EnabledKnowledgePacks ?? Array.Empty<string>());
         _settings.Save(s);
@@ -95,6 +99,11 @@ public partial class SettingsWindow : Window
         if (!string.IsNullOrWhiteSpace(keyToSave))
         {
             _secrets.SaveSecret("OpenAI:ApiKey", keyToSave);
+        }
+        var dgKey = (DeepgramKeyBox.Password ?? string.Empty).Trim();
+        if (!string.IsNullOrWhiteSpace(dgKey))
+        {
+            _secrets.SaveSecret("Deepgram:ApiKey", dgKey);
         }
         MessageBox.Show(this, "Saved", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
         Close();

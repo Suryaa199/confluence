@@ -37,7 +37,7 @@
                 </DockPanel>
                 <TextBlock Text="{Binding KeyStatusMessage}" Margin="0,4,0,0" Foreground="{DynamicResource Primary}" TextWrapping="Wrap"/>
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding OnboardingVisible, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="OpenAI key missing. Enter it above to enable streaming answers."/>
+                    <TextBlock Text="API key missing for selected provider. Enter OpenAI/Deepgram keys in Settings to enable streaming answers."/>
                 </StackPanel>
                 <ScrollViewer Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
                     <WrapPanel>
@@ -140,8 +140,8 @@
             <!-- Onboarding notice -->
             <Border Grid.ColumnSpan="2" Background="#22111111" CornerRadius="6" Padding="12" Visibility="{Binding OnboardingVisible, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <TextBlock Text="OpenAI key missing" Style="{StaticResource Subtitle}"/>
-                    <TextBlock Text="Enter your API key above or switch to Local providers in Settings." TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    <TextBlock Text="API key missing" Style="{StaticResource Subtitle}"/>
+                    <TextBlock Text="Enter your OpenAI or Deepgram API key (Settings) or switch to Local providers." TextWrapping="Wrap" Margin="0,6,0,0"/>
                 </StackPanel>
             </Border>
 

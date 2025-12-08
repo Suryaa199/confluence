@@ -32,6 +32,9 @@ public static class AppServices
     }
 
     public static bool HasOpenAiKey() => GetOpenAiKeySource() != OpenAiKeySource.None;
+    public static bool HasDeepgramKey()
+        => !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DEEPGRAM_API_KEY"))
+           || SecretStore is DpapiSecretStore dpapi && dpapi.HasStoredSecret("Deepgram:ApiKey");
 
     public static bool HasStoredOpenAiKey()
         => SecretStore is DpapiSecretStore dpapi && dpapi.HasStoredSecret("OpenAI:ApiKey");
@@ -52,10 +55,7 @@ public static class AppServices
     private static ILlmService CreateLlm()
     {
         var s = LoadSettings();
-        if (string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase))
-        {
-            return new Local.OllamaLlmService(s.OllamaBaseUrl, s.OllamaModel);
-        }
+        // Answers are restricted to OpenAI LLM.
         var key = SecretStore.GetSecret("OpenAI:ApiKey");
         var model = s.ChatModel ?? "gpt-4o-mini";
         return string.IsNullOrWhiteSpace(key) ? new NoopLlmService() : new OpenAI.OpenAiLlmService(key, model);
@@ -64,6 +64,15 @@ public static class AppServices
     private static IAsrService CreateAsr()
     {
         var s = LoadSettings();
+        if (string.Equals(s.AsrProvider, "Deepgram", StringComparison.OrdinalIgnoreCase))
+        {
+            var key = SecretStore.GetSecret("Deepgram:ApiKey");
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                return new DeepgramAsrService(key, s.DeepgramModel, s.DeepgramBaseUrl);
+            }
+            return new NoopAsrService();
+        }
         if (string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase))
         {
             return new Local.LocalAsrService(s.FasterWhisperUrl, s.FasterWhisperModel);

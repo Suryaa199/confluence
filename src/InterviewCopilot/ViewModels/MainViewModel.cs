@@ -96,11 +96,11 @@ public class MainViewModel : INotifyPropertyChanged
     public string KeyStatusMessage { get => _keyStatusMessage; set { _keyStatusMessage = value; OnPropertyChanged(); } }
 
     // Provider selectors
-    public ObservableCollection<string> LlmProviders { get; } = new(new[] { "OpenAI", "Ollama" });
+    public ObservableCollection<string> LlmProviders { get; } = new(new[] { "OpenAI" });
     private string _selectedLlmProvider = "OpenAI";
-    public string SelectedLlmProvider { get => _selectedLlmProvider; set { if (_selectedLlmProvider != value) { _selectedLlmProvider = value; OnPropertyChanged(); ApplyLlmProvider(value); UpdateProviderProfileFromSelections(); } } }
+    public string SelectedLlmProvider { get => _selectedLlmProvider; set { if (_selectedLlmProvider != value) { _selectedLlmProvider = "OpenAI"; OnPropertyChanged(); ApplyLlmProvider("OpenAI"); UpdateProviderProfileFromSelections(); } } }
 
-    public ObservableCollection<string> AsrProviders { get; } = new(new[] { "OpenAI", "Local" });
+    public ObservableCollection<string> AsrProviders { get; } = new(new[] { "OpenAI", "Local", "Deepgram" });
     private string _selectedAsrProvider = "OpenAI";
     public string SelectedAsrProvider { get => _selectedAsrProvider; set { if (_selectedAsrProvider != value) { _selectedAsrProvider = value; OnPropertyChanged(); ApplyAsrProvider(value); UpdateProviderProfileFromSelections(); } } }
 
@@ -138,7 +138,7 @@ public class MainViewModel : INotifyPropertyChanged
     public string LogFilePath => Services.LogService.LogPath;
     public string CheatSheetText { get => _cheatSheetText; set { _cheatSheetText = value; OnPropertyChanged(); } }
     public string OpenAiKeyInput { get => _openAiKeyInput; set { _openAiKeyInput = value; OnPropertyChanged(); } }
-    public ObservableCollection<string> ProviderProfiles { get; } = new(new[] { "Auto (Live Interview)", "OpenAI Only", "Local Only", "Hybrid (Local LLM + OpenAI ASR)", "Hybrid (OpenAI LLM + Local ASR)", "Custom" });
+    public ObservableCollection<string> ProviderProfiles { get; } = new(new[] { "Auto (Live Interview)", "OpenAI Only", "Hybrid (OpenAI LLM + Local ASR)", "Hybrid (OpenAI LLM + Deepgram ASR)", "Custom" });
     public string SelectedProviderProfile { get => _selectedProviderProfile; set { if (_selectedProviderProfile != value) { _selectedProviderProfile = value; OnPropertyChanged(); ApplyProviderProfile(value); } } }
     public string LiveCueText { get => _liveCueText; set { _liveCueText = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
 
@@ -205,8 +205,10 @@ public class MainViewModel : INotifyPropertyChanged
 
         // Initialize provider selectors from settings
         var s = Services.AppServices.LoadSettings();
-        SelectedLlmProvider = string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase) ? "Ollama" : "OpenAI";
-        SelectedAsrProvider = string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase) ? "Local" : "OpenAI";
+        SelectedLlmProvider = "OpenAI";
+        SelectedAsrProvider = string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase)
+            ? "Local"
+            : string.Equals(s.AsrProvider, "Deepgram", StringComparison.OrdinalIgnoreCase) ? "Deepgram" : "OpenAI";
         UpdateProviderProfileFromSelections();
         UpdatePersona(_selectedPersona);
     }
@@ -216,11 +218,19 @@ public class MainViewModel : INotifyPropertyChanged
         var s = Services.AppServices.LoadSettings();
         var hasKey = Services.AppServices.HasOpenAiKey();
         var llmProv = string.Equals(s.LlmProvider, "Ollama", StringComparison.OrdinalIgnoreCase) ? "Ollama" : "OpenAI";
-        var asrProv = string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase) ? "Local" : "OpenAI";
+        var asrProv = string.Equals(s.AsrProvider, "Local", StringComparison.OrdinalIgnoreCase)
+            ? "Local"
+            : string.Equals(s.AsrProvider, "Deepgram", StringComparison.OrdinalIgnoreCase) ? "Deepgram" : "OpenAI";
         var llmKeyPart = llmProv == "OpenAI" ? (hasKey ? "(key available)" : "(key missing)") : string.Empty;
-        var asrKeyPart = (asrProv == "OpenAI" && llmProv != "OpenAI") ? (hasKey ? "(key available)" : "(key missing)") : string.Empty;
+        var asrKeyPart = asrProv switch
+        {
+            "OpenAI" => hasKey ? "(key available)" : "(key missing)",
+            "Deepgram" => Services.AppServices.HasDeepgramKey() ? "(key available)" : "(key missing)",
+            _ => string.Empty
+        };
         ApiStatus = $"LLM: {llmProv} {llmKeyPart} | ASR: {asrProv} {asrKeyPart}".Trim();
-        OnboardingVisible = (llmProv == "OpenAI" || asrProv == "OpenAI") && !hasKey;
+        OnboardingVisible = ((llmProv == "OpenAI" || asrProv == "OpenAI") && !hasKey) ||
+                            (asrProv == "Deepgram" && !Services.AppServices.HasDeepgramKey());
         var vad = Services.AppServices.Vad;
         var isSilero = vad?.GetType().Name?.Contains("Silero", StringComparison.OrdinalIgnoreCase) == true && vad.Enabled;
         VadStatus = isSilero ? "VAD: Silero" : "VAD: Energy";
@@ -236,6 +246,14 @@ public class MainViewModel : INotifyPropertyChanged
             KeyStatusMessage = "OpenAI providers require a saved API key. Enter it above and click Save Key.";
             OnboardingVisible = true;
             LlmStatus = "Error: API key missing";
+            AsrStatus = "Error: API key missing";
+            return;
+        }
+        if (string.Equals(SelectedAsrProvider, "Deepgram", StringComparison.OrdinalIgnoreCase) &&
+            !Services.AppServices.HasDeepgramKey())
+        {
+            KeyStatusMessage = "Deepgram ASR requires a saved API key (Settings → Deepgram Key).";
+            OnboardingVisible = true;
             AsrStatus = "Error: API key missing";
             return;
         }
@@ -669,8 +687,15 @@ public class MainViewModel : INotifyPropertyChanged
         var store = new Services.JsonSettingsStore();
         var s = store.Load();
         var hasKey = Services.AppServices.HasOpenAiKey();
-        s.LlmProvider = hasKey ? "OpenAI" : "Ollama";
-        s.AsrProvider = hasKey ? "OpenAI" : "Local"; // fall back to local only when no cloud key is available
+        s.LlmProvider = "OpenAI";
+        if (Services.AppServices.HasDeepgramKey())
+        {
+            s.AsrProvider = "Deepgram";
+        }
+        else
+        {
+            s.AsrProvider = hasKey ? "OpenAI" : "Local"; // fall back to local only when no cloud key is available
+        }
         s.ChunkSizeMs = 450;
         s.EnableSileroVad = true;
         s.SileroWindowMs = 25;
@@ -705,7 +730,7 @@ public class MainViewModel : INotifyPropertyChanged
     {
         var store = new Services.JsonSettingsStore();
         var s = store.Load();
-        s.LlmProvider = provider;
+        s.LlmProvider = "OpenAI";
         store.Save(s);
         Services.AppServices.ReloadAiClients();
         RefreshStatus();
@@ -846,6 +871,12 @@ public class MainViewModel : INotifyPropertyChanged
 
     private void RefreshKeyStatus()
     {
+        if (string.Equals(SelectedAsrProvider, "Deepgram", StringComparison.OrdinalIgnoreCase) &&
+            !Services.AppServices.HasDeepgramKey())
+        {
+            KeyStatusMessage = "Deepgram key not saved. Add it in Settings to enable Deepgram ASR.";
+            return;
+        }
         var source = Services.AppServices.GetOpenAiKeySource();
         KeyStatusMessage = source switch
         {
@@ -900,21 +931,17 @@ public class MainViewModel : INotifyPropertyChanged
                 SelectedLlmProvider = "OpenAI";
                 SelectedAsrProvider = "OpenAI";
                 break;
-            case "Local Only":
-                SelectedLlmProvider = "Ollama";
-                SelectedAsrProvider = "Local";
-                break;
             case "Auto (Live Interview)":
                 ApplyAutoProfileInternal(invokedFromProfileSelection: true);
                 _suppressProviderProfileSync = false;
                 return;
-            case "Hybrid (Local LLM + OpenAI ASR)":
-                SelectedLlmProvider = "Ollama";
-                SelectedAsrProvider = "OpenAI";
-                break;
             case "Hybrid (OpenAI LLM + Local ASR)":
                 SelectedLlmProvider = "OpenAI";
                 SelectedAsrProvider = "Local";
+                break;
+            case "Hybrid (OpenAI LLM + Deepgram ASR)":
+                SelectedLlmProvider = "OpenAI";
+                SelectedAsrProvider = "Deepgram";
                 break;
         }
         _suppressProviderProfileSync = false;
@@ -926,9 +953,8 @@ public class MainViewModel : INotifyPropertyChanged
         var profile = (_selectedLlmProvider, _selectedAsrProvider) switch
         {
             ("OpenAI", "OpenAI") => "OpenAI Only",
-            ("Ollama", "Local") => "Local Only",
-            ("Ollama", "OpenAI") => "Hybrid (Local LLM + OpenAI ASR)",
             ("OpenAI", "Local") => "Hybrid (OpenAI LLM + Local ASR)",
+            ("OpenAI", "Deepgram") => "Custom",
             _ => "Custom"
         };
         if (_selectedProviderProfile != profile)

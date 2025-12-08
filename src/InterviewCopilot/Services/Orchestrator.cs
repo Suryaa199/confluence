@@ -2,6 +2,7 @@ using InterviewCopilot.Models;
 using InterviewCopilot.Services.Audio;
 using InterviewCopilot.Services.Prompting;
 using System.Text;
+using System.Threading;
 
 namespace InterviewCopilot.Services;
 
@@ -29,6 +30,7 @@ public sealed class Orchestrator : IDisposable
     private string _lastTranscriptChunk = string.Empty;
     private CancellationTokenSource? _answerCts;
     private (string Text, QuestionCategory Category)? _pendingQuestion;
+    private int _pendingCheckScheduled;
     public event Action<double>? OnNoiseLevel;
     public event Action? OnSpeechInterruption;
 
@@ -215,12 +217,14 @@ public sealed class Orchestrator : IDisposable
             {
                 _pendingQuestion = (extracted, category);
                 LogService.Info("Queued question while answer in progress.");
+                SchedulePendingQuestionCheck();
                 return;
             }
             if (!HasRequiredSilence())
             {
                 _pendingQuestion = (extracted, category);
                 LogService.Info("Queued question awaiting silence.");
+                SchedulePendingQuestionCheck();
                 return;
             }
             _answerInProgress = true;
@@ -372,6 +376,24 @@ public sealed class Orchestrator : IDisposable
         }
         LogService.Info("Processing queued question.");
         return RunAnswerFlowAsync(pending.Value.Text, pending.Value.Category);
+    }
+
+    private void SchedulePendingQuestionCheck()
+    {
+        if (Interlocked.Exchange(ref _pendingCheckScheduled, 1) == 1) return;
+        var delayMs = Math.Max(600, _settings.VadMaxSilenceMs + 200);
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(delayMs);
+                await TryProcessQueuedQuestionAsync();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _pendingCheckScheduled, 0);
+            }
+        });
     }
 
     public void CancelActiveAnswer()

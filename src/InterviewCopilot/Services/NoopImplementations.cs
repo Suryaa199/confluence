@@ -159,7 +159,10 @@ public sealed class DpapiSecretStore : ISecretStore
 
     public string? GetSecret(string name)
     {
-        var env = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        var envName = name.StartsWith("Deepgram", StringComparison.OrdinalIgnoreCase)
+            ? "DEEPGRAM_API_KEY"
+            : "OPENAI_API_KEY";
+        var env = Environment.GetEnvironmentVariable(envName);
         if (!string.IsNullOrWhiteSpace(env)) return env;
         var dict = LoadAll();
         if (dict.TryGetValue(name, out var b64))

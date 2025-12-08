@@ -18,6 +18,9 @@
                 <TextBlock Text="OpenAI API Key" FontWeight="Bold"/>
                 <PasswordBox x:Name="ApiKeyBox" Tag="API Key" PasswordChanged="OnApiKeyChanged"/>
 
+                <TextBlock Text="Deepgram API Key" FontWeight="Bold" Margin="0,8,0,0"/>
+                <PasswordBox x:Name="DeepgramKeyBox" Tag="Deepgram API Key"/>
+
                 <Border Height="1" Background="{StaticResource InputBorder}" Margin="0,12,0,12"/>
 
                 <TextBlock Text="Chunk Size (ms)" Margin="0,16,0,0" FontWeight="Bold"/>
@@ -40,7 +43,7 @@
                 <TextBox x:Name="VadMaxBox" Text="600"/>
 
                 <TextBlock Text="Chat Model" Margin="0,16,0,0" FontWeight="Bold"/>
-                <ComboBox x:Name="ChatModelBox" SelectedIndex="0">
+                <ComboBox x:Name="ChatModelBox" SelectedIndex="0" IsEnabled="True">
                     <ComboBoxItem Content="gpt-4o-mini"/>
                     <ComboBoxItem Content="gpt-4o"/>
                 </ComboBox>
@@ -48,10 +51,9 @@
                 <TextBlock Text="ASR Model" Margin="0,16,0,0" FontWeight="Bold"/>
                 <TextBox x:Name="AsrModelBox" Text="whisper-1"/>
 
-                <TextBlock Text="LLM Provider" Margin="0,16,0,0" FontWeight="Bold"/>
-                <ComboBox x:Name="LlmProviderBox" SelectedIndex="0">
+                <TextBlock Text="LLM Provider (fixed to OpenAI)" Margin="0,16,0,0" FontWeight="Bold"/>
+                <ComboBox x:Name="LlmProviderBox" SelectedIndex="0" IsEnabled="False">
                     <ComboBoxItem Content="OpenAI"/>
-                    <ComboBoxItem Content="Ollama"/>
                 </ComboBox>
                 <TextBlock Text="Ollama Base URL"/>
                 <TextBox x:Name="OllamaUrlBox" Text="http://localhost:11434"/>
@@ -62,11 +64,16 @@
                 <ComboBox x:Name="AsrProviderBox" SelectedIndex="0">
                     <ComboBoxItem Content="OpenAI"/>
                     <ComboBoxItem Content="Local"/>
+                    <ComboBoxItem Content="Deepgram"/>
                 </ComboBox>
                 <TextBlock Text="Faster-Whisper URL"/>
                 <TextBox x:Name="FwUrlBox" Text="http://localhost:5055"/>
                 <TextBlock Text="Faster-Whisper Model"/>
                 <TextBox x:Name="FwModelBox" Text="base"/>
+                <TextBlock Text="Deepgram Endpoint"/>
+                <TextBox x:Name="DeepgramBaseBox" Text="https://api.deepgram.com"/>
+                <TextBlock Text="Deepgram Model"/>
+                <TextBox x:Name="DeepgramModelBox" Text="nova-2-general"/>
 
                 <Border Height="1" Background="{StaticResource InputBorder}" Margin="0,12,0,12"/>
 

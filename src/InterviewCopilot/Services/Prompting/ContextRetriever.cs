@@ -89,6 +89,25 @@ public sealed class ContextRetriever
             .Take(max)
             .Select(x => x.Snippet)
             .ToList();
+
+        if (ranked.Count == 0)
+        {
+            // Fallback: surface top resume/JD/cheatsheet snippets so answers stay grounded.
+            ranked = _snippets
+                .OrderBy(sn => sn.Source switch
+                {
+                    "Resume" => 0,
+                    "JobDescription" => 1,
+                    "CheatSheet" => 2,
+                    "Keywords" => 3,
+                    "Company" => 4,
+                    _ => 5
+                })
+                .ThenBy(sn => sn.Text.Length)
+                .Take(max)
+                .ToList();
+        }
+
         return ranked;
     }
 
