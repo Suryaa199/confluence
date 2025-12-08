@@ -209,7 +209,7 @@ public sealed class Orchestrator : IDisposable
         {
             return; // keep waiting for the turn to settle
         }
-        if (category == QuestionCategory.Greeting || category == QuestionCategory.Noise)
+        if (category == QuestionCategory.Noise)
         {
             return;
         }
