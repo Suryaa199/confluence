@@ -24,7 +24,7 @@ public sealed class DeepgramAsrService : IAsrService, IDisposable
         {
             using var content = new ByteArrayContent(wavBytes);
             content.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
-            var url = $"v1/listen?model={_model}&language=en";
+            var url = $"v1/listen?model={_model}&language=en&punctuate=true&smart_format=false";
             using var res = await _http.PostAsync(url, content, ct);
             if ((int)res.StatusCode == 429 || (int)res.StatusCode >= 500)
             {

@@ -22,6 +22,7 @@ public sealed class Orchestrator : IDisposable
     private readonly List<float> _currentBuffer = new();
     private readonly object _bufferLock = new();
     private DateTime _lastSpeech = DateTime.MinValue;
+    private DateTime _lastTranscriptAt = DateTime.MinValue;
     private const int TargetRate = 16000;
     private readonly object _lock = new();
     private int _rev;
@@ -144,6 +145,7 @@ public sealed class Orchestrator : IDisposable
         if (string.IsNullOrWhiteSpace(cleaned)) return;
         if (string.Equals(cleaned, _lastTranscriptChunk, StringComparison.OrdinalIgnoreCase)) return;
         _lastTranscriptChunk = cleaned;
+        _lastTranscriptAt = DateTime.UtcNow;
         if (_smallTalkResponder.TryRespond(text, OnAnswerToken))
         {
             OnTranscript?.Invoke(cleaned);
@@ -203,6 +205,10 @@ public sealed class Orchestrator : IDisposable
             return;
         }
         await Task.Delay(1200);
+        if ((DateTime.UtcNow - _lastTranscriptAt).TotalMilliseconds < 1000)
+        {
+            return; // keep waiting for the turn to settle
+        }
         if (category == QuestionCategory.Greeting || category == QuestionCategory.Noise)
         {
             return;
