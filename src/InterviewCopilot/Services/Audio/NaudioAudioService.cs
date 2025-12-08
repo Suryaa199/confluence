@@ -132,6 +132,7 @@ public sealed class NaudioAudioService : IAudioService
     private readonly byte[] _work = Array.Empty<byte>();
 
     private bool _silenceRaised;
+    private DateTime _silenceSince = DateTime.MinValue;
 
     private void OnData(object? sender, WaveInEventArgs e)
     {
@@ -149,7 +150,8 @@ public sealed class NaudioAudioService : IAudioService
         OnLevel?.Invoke(normalized);
         if (normalized < 0.02)
         {
-            if (!_silenceRaised)
+            if (_silenceSince == DateTime.MinValue) _silenceSince = DateTime.UtcNow;
+            if (!_silenceRaised && (DateTime.UtcNow - _silenceSince).TotalMilliseconds >= 600)
             {
                 _silenceRaised = true;
                 OnSilenceDetected?.Invoke();
@@ -158,6 +160,7 @@ public sealed class NaudioAudioService : IAudioService
         else if (normalized > 0.05)
         {
             _silenceRaised = false;
+            _silenceSince = DateTime.MinValue;
         }
         // Session gating (PerApp only) while still allowing short post-activity tails
         if (_options?.Source == AudioSourceKind.PerApp)

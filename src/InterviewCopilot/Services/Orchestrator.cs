@@ -274,7 +274,7 @@ public sealed class Orchestrator : IDisposable
 
     private void HandleSilence()
     {
-        OnSpeechInterruption?.Invoke();
+        // Do not cancel active answers on brief silence; only try processing queued questions.
         _ = TryProcessQueuedQuestionAsync();
     }
 
