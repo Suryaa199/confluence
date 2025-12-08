@@ -5,9 +5,9 @@ namespace InterviewCopilot.Services.Prompting;
 public static class ScenarioLibrary
 {
     private static readonly ScenarioEntry DefaultEntry = new(
-        "DevSecOps",
-        "Optimized AI Force AKS platform (reduced image size 15GB→4GB, startup latency -40%, enforced Trivy gates).",
-        "az aks get-credentials -g ai-rg -n aiforce-aks\nkubectl rollout restart deployment aiforce-api");
+        string.Empty,
+        string.Empty,
+        string.Empty);
 
     private static readonly (string[] keywords, ScenarioEntry entry)[] Entries = new[]
     {
