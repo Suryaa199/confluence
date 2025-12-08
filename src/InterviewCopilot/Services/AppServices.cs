@@ -66,10 +66,10 @@ public static class AppServices
         var s = LoadSettings();
         if (string.Equals(s.AsrProvider, "Deepgram", StringComparison.OrdinalIgnoreCase))
         {
-            var key = SecretStore.GetSecret("Deepgram:ApiKey");
-            if (!string.IsNullOrWhiteSpace(key))
+            var dgKey = SecretStore.GetSecret("Deepgram:ApiKey");
+            if (!string.IsNullOrWhiteSpace(dgKey))
             {
-                return new DeepgramAsrService(key, s.DeepgramModel, s.DeepgramBaseUrl);
+                return new DeepgramAsrService(dgKey, s.DeepgramModel, s.DeepgramBaseUrl);
             }
             return new NoopAsrService();
         }
@@ -77,9 +77,9 @@ public static class AppServices
         {
             return new Local.LocalAsrService(s.FasterWhisperUrl, s.FasterWhisperModel);
         }
-        var key = SecretStore.GetSecret("OpenAI:ApiKey");
+        var oaKey = SecretStore.GetSecret("OpenAI:ApiKey");
         var model = s.AsrModel ?? "whisper-1";
-        return string.IsNullOrWhiteSpace(key) ? new NoopAsrService() : new OpenAI.OpenAiWhisperAsrService(key) { Model = model };
+        return string.IsNullOrWhiteSpace(oaKey) ? new NoopAsrService() : new OpenAI.OpenAiWhisperAsrService(oaKey) { Model = model };
     }
 
     public static void ReloadAiClients()
