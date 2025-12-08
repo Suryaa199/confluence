@@ -195,6 +195,12 @@ public sealed class Orchestrator : IDisposable
         question = TakeRecentQuestion(question);
         var extracted = TranscriptPreprocessor.ExtractLatestQuestion(question);
         if (string.IsNullOrWhiteSpace(extracted)) return;
+        // Require a minimum question length to avoid fragment prompts.
+        var wordCount = extracted.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        if (wordCount < 4 && !extracted.Contains('?'))
+        {
+            return;
+        }
         var category = TranscriptPreprocessor.Classify(extracted);
         extracted = QuestionIntentRebuilder.Rebuild(extracted);
         extracted = QuestionSanitizer.Sanitize(extracted);

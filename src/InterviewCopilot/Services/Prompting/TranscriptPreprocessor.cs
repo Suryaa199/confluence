@@ -96,22 +96,31 @@ public static class TranscriptPreprocessor
     {
         if (string.IsNullOrWhiteSpace(transcript)) return string.Empty;
         var trimmed = transcript.Trim();
-        var pattern = "(?is)(what|how|why|when|where|explain|walk me through|tell me about)[^?]+\\?";
+        var pattern = "(?is)(what|how|why|when|where|who|explain|walk me through|tell me about|can you|could you|would you|will you|difference|compare)[^?]+\\?";
         var matches = Regex.Matches(trimmed, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
         if (matches.Count > 0)
         {
             return matches[^1].Value.Trim();
         }
-        var sentences = trimmed.Split(new[] { '.', '!', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        var sentences = trimmed.Split(new[] { '.', '!', '\n', '?' }, StringSplitOptions.RemoveEmptyEntries);
         for (int i = sentences.Length - 1; i >= 0; i--)
         {
             var sentence = sentences[i].Trim();
-            if (sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 6)
+            var words = sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length >= 5 && LooksLikeQuestion(sentence))
             {
                 return sentence + "?";
             }
         }
         return string.Empty;
+    }
+
+    private static bool LooksLikeQuestion(string sentence)
+    {
+        if (string.IsNullOrWhiteSpace(sentence)) return false;
+        var s = sentence.ToLowerInvariant();
+        string[] cues = { "what", "how", "why", "when", "where", "who", "could", "would", "should", "can you", "tell me", "explain", "difference", "compare" };
+        return cues.Any(c => s.Contains(c));
     }
 
     private static readonly string[] ArchitectureTokens =
